@@ -29,12 +29,19 @@ export interface Bookmark {
   createdAt: number;
 }
 
+export interface CompanyNote {
+  company: string;
+  content: string;
+  updatedAt: number;
+}
+
 let db: IDBPDatabase | null = null;
 
 const DB_NAME = 'interview-helper';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const QUESTIONS_STORE = 'questions';
 const BOOKMARKS_STORE = 'bookmarks';
+const NOTES_STORE = 'companyNotes';
 
 async function initDB(): Promise<IDBPDatabase> {
   if (db) return db;
@@ -61,6 +68,11 @@ async function initDB(): Promise<IDBPDatabase> {
         bookmarksStore.createIndex('resourceType', 'resourceType');
         bookmarksStore.createIndex('category', 'category');
         bookmarksStore.createIndex('createdAt', 'createdAt');
+      }
+
+      // Create company notes store (v2)
+      if (!db.objectStoreNames.contains(NOTES_STORE)) {
+        db.createObjectStore(NOTES_STORE, { keyPath: 'company' });
       }
     },
   });
@@ -220,4 +232,48 @@ export async function getUniqueResourceCategories(): Promise<string[]> {
       .map((b) => b.category!)
   );
   return Array.from(categories).sort();
+}
+
+// Company notes operations
+export async function getCompanyNote(company: string): Promise<CompanyNote | undefined> {
+  const database = await initDB();
+  return database.get(NOTES_STORE, company);
+}
+
+export async function saveCompanyNote(company: string, content: string): Promise<void> {
+  const database = await initDB();
+  const note: CompanyNote = { company, content, updatedAt: Date.now() };
+  await database.put(NOTES_STORE, note);
+}
+
+// Company stats helper
+export interface CompanyStats {
+  name: string;
+  behavioral: number;
+  technical: number;
+  total: number;
+  lastPracticed: number | null;
+}
+
+export async function getCompanyStats(): Promise<CompanyStats[]> {
+  const database = await initDB();
+  const allQuestions = await database.getAll(QUESTIONS_STORE);
+
+  const statsMap = new Map<string, CompanyStats>();
+
+  for (const q of allQuestions) {
+    let stats = statsMap.get(q.company);
+    if (!stats) {
+      stats = { name: q.company, behavioral: 0, technical: 0, total: 0, lastPracticed: null };
+      statsMap.set(q.company, stats);
+    }
+    stats.total++;
+    if (q.type === 'behavioral') stats.behavioral++;
+    else stats.technical++;
+    if (q.lastPracticed && (!stats.lastPracticed || q.lastPracticed > stats.lastPracticed)) {
+      stats.lastPracticed = q.lastPracticed;
+    }
+  }
+
+  return Array.from(statsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
 }

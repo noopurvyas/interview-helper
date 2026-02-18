@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, Zap, Bookmark, BarChart3 } from 'lucide-react';
+import { BookOpen, Zap, Bookmark, BarChart3, Building2 } from 'lucide-react';
 
 interface NavigationItem {
   label: string;
@@ -20,6 +20,12 @@ const navigationItems: NavigationItem[] = [
     path: '/technical',
     icon: <Zap className="w-5 h-5" />,
     color: 'technical',
+  },
+  {
+    label: 'Companies',
+    path: '/companies',
+    icon: <Building2 className="w-5 h-5" />,
+    color: 'behavioral',
   },
   {
     label: 'Bookmarks',
@@ -44,7 +50,7 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex overflow-x-auto">
           {navigationItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
             const colorMap: Record<string, { active: string; inactive: string }> = {
               behavioral: {
                 active: 'text-behavioral-600 border-behavior al-600 bg-behavioral-50 dark:bg-behavioral-900/20',

@@ -3,6 +3,8 @@ import { BehavioralQuestionsPage } from './pages/BehavioralQuestions';
 import { TechnicalQuestionsPage } from './pages/TechnicalQuestions';
 import { BookmarksPage } from './pages/Bookmarks';
 import { DashboardPage } from './pages/Dashboard';
+import { CompanyHubPage } from './pages/CompanyHub';
+import { CompanyDetailPage } from './pages/CompanyDetail';
 import { Header } from './components/Header';
 import { InstallBanner } from './components/InstallBanner';
 import { Navigation } from './components/Navigation';
@@ -86,6 +88,8 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/behavioral" element={<BehavioralQuestionsPage />} />
             <Route path="/technical" element={<TechnicalQuestionsPage />} />
+            <Route path="/companies" element={<CompanyHubPage />} />
+            <Route path="/companies/:companyName" element={<CompanyDetailPage />} />
             <Route path="/bookmarks" element={<BookmarksPage />} />
           </Routes>
         </main>
