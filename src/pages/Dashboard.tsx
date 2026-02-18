@@ -13,10 +13,6 @@ export function DashboardPage() {
   const favoriteQuestions = questions.filter((q) => q.isFavorite).length;
   const totalBookmarks = bookmarks.length;
 
-  const recentQuestions = [...questions]
-    .sort((a, b) => b.createdAt - a.createdAt)
-    .slice(0, 5);
-
   const unansweredQuestions = questions.filter((q) => q.answerVariations.length === 0);
   const needsPractice = questions
     .filter((q) => q.practiceCount === 0)

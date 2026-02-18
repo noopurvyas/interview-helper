@@ -4,13 +4,15 @@ import { TechnicalQuestionsPage } from './pages/TechnicalQuestions';
 import { BookmarksPage } from './pages/Bookmarks';
 import { DashboardPage } from './pages/Dashboard';
 import { Header } from './components/Header';
+import { InstallBanner } from './components/InstallBanner';
 import { Navigation } from './components/Navigation';
 import { useQuestions } from './hooks/useQuestions';
+import { useBookmarks } from './hooks/useBookmarks';
 import jsPDF from 'jspdf';
 
 function App() {
   const { questions } = useQuestions();
-  const { bookmarks } = require('./hooks/useBookmarks').useBookmarks();
+  const { bookmarks } = useBookmarks();
 
   const handleExport = () => {
     const format = prompt('Export as (json or pdf)?', 'json');
@@ -75,6 +77,7 @@ function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+        <InstallBanner />
         <Header onExportClick={handleExport} />
         <Navigation />
         <main>

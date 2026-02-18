@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Bookmark,
+  type Bookmark,
   addBookmark as dbAddBookmark,
-  getBookmark as dbGetBookmark,
   updateBookmark as dbUpdateBookmark,
   deleteBookmark as dbDeleteBookmark,
   getBookmarksByType,

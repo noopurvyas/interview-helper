@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  Question,
-  AnswerVariation,
+  type Question,
   addQuestion as dbAddQuestion,
   getQuestion as dbGetQuestion,
   updateQuestion as dbUpdateQuestion,

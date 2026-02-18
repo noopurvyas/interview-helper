@@ -1,4 +1,4 @@
-import { IDBPDatabase, openDB } from 'idb';
+import { type IDBPDatabase, openDB } from 'idb';
 
 export interface AnswerVariation {
   id: string;
@@ -115,7 +115,7 @@ export async function getQuestionsByTypeAndCompany(
 
 export async function getFavoriteQuestions(type?: 'behavioral' | 'technical'): Promise<Question[]> {
   const database = await initDB();
-  const allFavorites = await database.getAllFromIndex(QUESTIONS_STORE, 'isFavorite', true);
+  const allFavorites = await database.getAllFromIndex(QUESTIONS_STORE, 'isFavorite', 1);
 
   if (type) {
     return allFavorites.filter((q) => q.type === type);
@@ -138,7 +138,7 @@ export async function searchQuestions(query: string): Promise<Question[]> {
     (q) =>
       q.question.toLowerCase().includes(lowerQuery) ||
       q.company.toLowerCase().includes(lowerQuery) ||
-      q.answerVariations.some((av) =>
+      q.answerVariations.some((av: AnswerVariation) =>
         av.content.toLowerCase().includes(lowerQuery)
       )
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X, Plus } from 'lucide-react';
 import type { Question, AnswerVariation } from '../db/indexeddb';
 
