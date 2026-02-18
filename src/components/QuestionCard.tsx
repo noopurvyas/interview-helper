@@ -10,6 +10,13 @@ interface QuestionCardProps {
   onPractice: (id: string) => void;
 }
 
+const starLabels = [
+  { key: 'situation', label: 'S', full: 'Situation', color: 'bg-blue-500' },
+  { key: 'task', label: 'T', full: 'Task', color: 'bg-amber-500' },
+  { key: 'action', label: 'A', full: 'Action', color: 'bg-green-500' },
+  { key: 'result', label: 'R', full: 'Result', color: 'bg-purple-500' },
+] as const;
+
 export function QuestionCard({
   question,
   onEdit,
@@ -94,15 +101,46 @@ export function QuestionCard({
                   {answer.isPrimary && (
                     <span className="badge badge-behavioral text-xs">Primary</span>
                   )}
+                  {answer.star && (
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-behavioral-100 dark:bg-behavioral-900/30 text-behavioral-600 dark:text-behavioral-300 font-medium">
+                      STAR
+                    </span>
+                  )}
                 </div>
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  {answer.content}
-                </p>
+
+                {answer.star ? (
+                  <div className="space-y-2">
+                    {starLabels.map(({ key, label, full, color }) => {
+                      const value = answer.star![key];
+                      if (!value) return null;
+                      return (
+                        <div key={key} className="flex gap-2">
+                          <span className={`${color} text-white text-xs font-bold w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5`}>
+                            {label}
+                          </span>
+                          <div>
+                            <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                              {full}
+                            </span>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              {value}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    {answer.content}
+                  </p>
+                )}
+
                 {answer.keyPoints.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
-                    {answer.keyPoints.map((point, idx) => (
+                    {answer.keyPoints.map((point, i) => (
                       <span
-                        key={idx}
+                        key={i}
                         className="inline-block px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs rounded"
                       >
                         {point}

@@ -1,11 +1,70 @@
 import { type IDBPDatabase, openDB } from 'idb';
 
+export interface StarFields {
+  situation: string;
+  task: string;
+  action: string;
+  result: string;
+}
+
 export interface AnswerVariation {
   id: string;
   content: string;
   keyPoints: string[];
   isPrimary: boolean;
+  star?: StarFields;
 }
+
+export const BEHAVIORAL_TEMPLATES: { category: string; questions: string[] }[] = [
+  {
+    category: 'Leadership',
+    questions: [
+      'Tell me about a time you led a team through a difficult project.',
+      'Describe a situation where you had to make an unpopular decision.',
+      'Give an example of when you mentored someone.',
+    ],
+  },
+  {
+    category: 'Conflict',
+    questions: [
+      'Tell me about a time you had a disagreement with a coworker.',
+      'Describe a situation where you had to handle a difficult stakeholder.',
+      'Give an example of when you resolved a conflict on your team.',
+    ],
+  },
+  {
+    category: 'Teamwork',
+    questions: [
+      'Tell me about a time you worked with a cross-functional team.',
+      'Describe a situation where you had to rely on others to complete a task.',
+      'Give an example of when you helped a teammate who was struggling.',
+    ],
+  },
+  {
+    category: 'Failure',
+    questions: [
+      'Tell me about a time you failed at something. What did you learn?',
+      'Describe a project that did not go as planned.',
+      'Give an example of when you received critical feedback and how you responded.',
+    ],
+  },
+  {
+    category: 'Problem Solving',
+    questions: [
+      'Tell me about a time you solved a complex problem under pressure.',
+      'Describe a situation where you had to think creatively to find a solution.',
+      'Give an example of when you identified a problem before others noticed.',
+    ],
+  },
+  {
+    category: 'Communication',
+    questions: [
+      'Tell me about a time you had to explain a technical concept to a non-technical audience.',
+      'Describe a situation where miscommunication caused an issue and how you fixed it.',
+      'Give an example of when you persuaded someone to see your point of view.',
+    ],
+  },
+];
 
 export interface Question {
   id: string;

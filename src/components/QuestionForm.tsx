@@ -5,25 +5,42 @@ import type { Question, AnswerVariation } from '../db/indexeddb';
 interface QuestionFormProps {
   question?: Question;
   companies: string[];
+  defaultType?: 'behavioral' | 'technical';
   onSubmit: (question: Omit<Question, 'id'>) => void;
   onCancel: () => void;
+}
+
+function emptyAnswer(useStar: boolean): AnswerVariation {
+  return {
+    id: crypto.randomUUID(),
+    content: '',
+    keyPoints: [],
+    isPrimary: false,
+    ...(useStar ? { star: { situation: '', task: '', action: '', result: '' } } : {}),
+  };
 }
 
 export function QuestionForm({
   question,
   companies,
+  defaultType,
   onSubmit,
   onCancel,
 }: QuestionFormProps) {
   const [type, setType] = useState<'behavioral' | 'technical'>(
-    question?.type || 'behavioral'
+    question?.type || defaultType || 'behavioral'
   );
   const [company, setCompany] = useState(question?.company || '');
   const [newCompany, setNewCompany] = useState('');
   const [questionText, setQuestionText] = useState(question?.question || '');
   const [answers, setAnswers] = useState<AnswerVariation[]>(
-    question?.answerVariations || [{ id: crypto.randomUUID(), content: '', keyPoints: [], isPrimary: true }]
+    question?.answerVariations?.length
+      ? question.answerVariations
+      : [{ id: crypto.randomUUID(), content: '', keyPoints: [], isPrimary: true }]
   );
+  const [useStarMode, setUseStarMode] = useState(() => {
+    return question?.answerVariations?.some((a) => a.star) || false;
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,11 +51,19 @@ export function QuestionForm({
       return;
     }
 
+    // Filter answers: for STAR mode, check if any STAR field is filled; for free-form check content
+    const filteredAnswers = answers.filter((a) => {
+      if (a.star) {
+        return a.star.situation.trim() || a.star.task.trim() || a.star.action.trim() || a.star.result.trim();
+      }
+      return a.content.trim();
+    });
+
     onSubmit({
       type,
       company: selectedCompany,
       question: questionText,
-      answerVariations: answers.filter((a) => a.content.trim()),
+      answerVariations: filteredAnswers,
       isFavorite: question?.isFavorite || false,
       practiceCount: question?.practiceCount || 0,
       lastPracticed: question?.lastPracticed || null,
@@ -46,8 +71,15 @@ export function QuestionForm({
     });
   };
 
-  const updateAnswer = (id: string, content: string) => {
-    setAnswers(answers.map((a) => (a.id === id ? { ...a, content } : a)));
+  const updateAnswer = (id: string, field: string, value: string) => {
+    setAnswers(answers.map((a) => (a.id === id ? { ...a, [field]: value } : a)));
+  };
+
+  const updateStarField = (id: string, field: string, value: string) => {
+    setAnswers(answers.map((a) => {
+      if (a.id !== id) return a;
+      return { ...a, star: { ...a.star!, [field]: value } };
+    }));
   };
 
   const updateKeyPoints = (id: string, keyPoints: string[]) => {
@@ -55,14 +87,28 @@ export function QuestionForm({
   };
 
   const addAnswer = () => {
-    setAnswers([
-      ...answers,
-      { id: crypto.randomUUID(), content: '', keyPoints: [], isPrimary: false },
-    ]);
+    setAnswers([...answers, emptyAnswer(useStarMode)]);
   };
 
   const removeAnswer = (id: string) => {
     setAnswers(answers.filter((a) => a.id !== id));
+  };
+
+  const toggleStarMode = () => {
+    const next = !useStarMode;
+    setUseStarMode(next);
+    // Migrate existing answers
+    setAnswers(answers.map((a) => {
+      if (next && !a.star) {
+        return { ...a, star: { situation: '', task: '', action: '', result: '' } };
+      }
+      if (!next && a.star) {
+        // Combine STAR into content if content is empty
+        const combined = a.content || [a.star.situation, a.star.task, a.star.action, a.star.result].filter(Boolean).join('\n\n');
+        return { ...a, content: combined, star: undefined };
+      }
+      return a;
+    }));
   };
 
   return (
@@ -135,6 +181,31 @@ export function QuestionForm({
             />
           </div>
 
+          {/* STAR toggle for behavioral */}
+          {type === 'behavioral' && (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={toggleStarMode}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  useStarMode ? 'bg-behavioral-600' : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    useStarMode ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                STAR Framework
+              </span>
+              <span className="text-xs text-gray-500">
+                (Situation, Task, Action, Result)
+              </span>
+            </div>
+          )}
+
           {/* Answers */}
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -168,13 +239,32 @@ export function QuestionForm({
                     )}
                   </div>
 
-                  <textarea
-                    value={answer.content}
-                    onChange={(e) => updateAnswer(answer.id, e.target.value)}
-                    className="input-field"
-                    rows={3}
-                    placeholder="Enter answer content..."
-                  />
+                  {useStarMode && answer.star ? (
+                    <div className="space-y-3">
+                      {(['situation', 'task', 'action', 'result'] as const).map((field) => (
+                        <div key={field}>
+                          <label className="block text-xs font-semibold mb-1 uppercase tracking-wide text-behavioral-600">
+                            {field.charAt(0).toUpperCase() + field.slice(1)}
+                          </label>
+                          <textarea
+                            value={answer.star![field]}
+                            onChange={(e) => updateStarField(answer.id, field, e.target.value)}
+                            className="input-field"
+                            rows={2}
+                            placeholder={`Describe the ${field}...`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <textarea
+                      value={answer.content}
+                      onChange={(e) => updateAnswer(answer.id, 'content', e.target.value)}
+                      className="input-field"
+                      rows={3}
+                      placeholder="Enter answer content..."
+                    />
+                  )}
 
                   <div>
                     <label className="block text-xs font-medium mb-2">

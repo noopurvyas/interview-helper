@@ -1,23 +1,29 @@
 import { useState } from 'react';
-import { Plus, Loader } from 'lucide-react';
+import { Plus, Loader, Dumbbell, BookTemplate } from 'lucide-react';
 import { useQuestions } from '../hooks/useQuestions';
 import { useSearch } from '../hooks/useSearch';
 import { QuestionCard } from '../components/QuestionCard';
 import { QuestionForm } from '../components/QuestionForm';
 import { SearchBar } from '../components/SearchBar';
 import { FilterSidebar } from '../components/FilterSidebar';
+import { PracticeMode } from '../components/PracticeMode';
+import { TemplatesPicker } from '../components/TemplatesPicker';
+import type { Question } from '../db/indexeddb';
 
 export function BehavioralQuestionsPage() {
   const { questions, companies, loading, loadByType, addQuestion, updateQuestion, deleteQuestion, toggleFavorite, incrementPracticeCount } = useQuestions();
-  const [editingQuestion, setEditingQuestion] = useState<any>(null);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [showPractice, setShowPractice] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [prefillQuestion, setPrefillQuestion] = useState('');
 
   const { query, results, handleSearch, clearSearch } = useSearch(async (q) => {
-    const allQuestions = await Promise.resolve(questions);
-    return allQuestions.filter(
+    return questions.filter(
       (q_item) =>
+        q_item.type === 'behavioral' &&
         (q_item.question.toLowerCase().includes(q.toLowerCase()) ||
           q_item.company.toLowerCase().includes(q.toLowerCase())) &&
         (selectedCompanies.length === 0 || selectedCompanies.includes(q_item.company)) &&
@@ -32,7 +38,7 @@ export function BehavioralQuestionsPage() {
       (!showFavorites || q.isFavorite)
   );
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: Omit<Question, 'id'>) => {
     try {
       if (editingQuestion) {
         await updateQuestion({ ...editingQuestion, ...data });
@@ -41,10 +47,18 @@ export function BehavioralQuestionsPage() {
       }
       setShowForm(false);
       setEditingQuestion(null);
+      setPrefillQuestion('');
       await loadByType('behavioral');
-    } catch (err) {
+    } catch {
       alert('Error saving question');
     }
+  };
+
+  const handleTemplateSelect = (questionText: string) => {
+    setShowTemplates(false);
+    setPrefillQuestion(questionText);
+    setEditingQuestion(null);
+    setShowForm(true);
   };
 
   return (
@@ -70,16 +84,37 @@ export function BehavioralQuestionsPage() {
                 placeholder="Search behavioral questions..."
               />
             </div>
-            <button
-              onClick={() => {
-                setEditingQuestion(null);
-                setShowForm(true);
-              }}
-              className="btn-behavioral flex items-center justify-center space-x-2"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Add Question</span>
-            </button>
+            <div className="flex gap-2">
+              {displayQuestions.length > 0 && (
+                <button
+                  onClick={() => setShowPractice(true)}
+                  className="btn-secondary flex items-center justify-center gap-2"
+                  title="Practice mode"
+                >
+                  <Dumbbell className="w-4 h-4" />
+                  <span className="hidden sm:inline">Practice</span>
+                </button>
+              )}
+              <button
+                onClick={() => setShowTemplates(true)}
+                className="btn-secondary flex items-center justify-center gap-2"
+                title="Common questions"
+              >
+                <BookTemplate className="w-4 h-4" />
+                <span className="hidden sm:inline">Templates</span>
+              </button>
+              <button
+                onClick={() => {
+                  setEditingQuestion(null);
+                  setPrefillQuestion('');
+                  setShowForm(true);
+                }}
+                className="btn-behavioral flex items-center justify-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Add Question</span>
+              </button>
+            </div>
           </div>
 
           {loading && (
@@ -91,7 +126,7 @@ export function BehavioralQuestionsPage() {
           {!loading && displayQuestions.length === 0 && (
             <div className="text-center py-12 text-gray-600 dark:text-gray-400">
               <p className="text-lg">No questions found</p>
-              <p className="text-sm mt-2">Get started by adding your first question!</p>
+              <p className="text-sm mt-2">Get started by adding your first question or pick from templates!</p>
             </div>
           )}
 
@@ -102,6 +137,7 @@ export function BehavioralQuestionsPage() {
                 question={question}
                 onEdit={(q) => {
                   setEditingQuestion(q);
+                  setPrefillQuestion('');
                   setShowForm(true);
                 }}
                 onDelete={deleteQuestion}
@@ -115,13 +151,30 @@ export function BehavioralQuestionsPage() {
 
       {showForm && (
         <QuestionForm
-          question={editingQuestion}
+          question={editingQuestion ? { ...editingQuestion, ...(prefillQuestion ? { question: prefillQuestion } : {}) } : prefillQuestion ? { question: prefillQuestion } as any : undefined}
           companies={companies}
+          defaultType="behavioral"
           onSubmit={handleSubmit}
           onCancel={() => {
             setShowForm(false);
             setEditingQuestion(null);
+            setPrefillQuestion('');
           }}
+        />
+      )}
+
+      {showPractice && (
+        <PracticeMode
+          questions={displayQuestions}
+          onPractice={incrementPracticeCount}
+          onClose={() => setShowPractice(false)}
+        />
+      )}
+
+      {showTemplates && (
+        <TemplatesPicker
+          onSelect={handleTemplateSelect}
+          onClose={() => setShowTemplates(false)}
         />
       )}
     </div>
