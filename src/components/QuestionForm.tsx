@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { X, Plus } from 'lucide-react';
-import type { Question, AnswerVariation } from '../db/indexeddb';
+import { X, Plus, Code } from 'lucide-react';
+import type { Question, AnswerVariation, TechnicalSubtype, Difficulty } from '../db/indexeddb';
 
 interface QuestionFormProps {
   question?: Question;
@@ -42,6 +42,13 @@ export function QuestionForm({
     return question?.answerVariations?.some((a) => a.star) || false;
   });
 
+  // Technical-specific fields
+  const [subtype, setSubtype] = useState<TechnicalSubtype | ''>(question?.subtype || '');
+  const [difficulty, setDifficulty] = useState<Difficulty | ''>(question?.difficulty || '');
+  const [tags, setTags] = useState<string>(question?.tags?.join(', ') || '');
+  const [codeLanguage, setCodeLanguage] = useState(question?.codeSnippet?.language || '');
+  const [codeContent, setCodeContent] = useState(question?.codeSnippet?.code || '');
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const selectedCompany = newCompany || company;
@@ -59,6 +66,11 @@ export function QuestionForm({
       return a.content.trim();
     });
 
+    const parsedTags = tags.split(',').map((t) => t.trim()).filter(Boolean);
+    const codeSnippet = codeContent.trim()
+      ? { language: codeLanguage || 'text', code: codeContent }
+      : undefined;
+
     onSubmit({
       type,
       company: selectedCompany,
@@ -68,6 +80,12 @@ export function QuestionForm({
       practiceCount: question?.practiceCount || 0,
       lastPracticed: question?.lastPracticed || null,
       createdAt: question?.createdAt || Date.now(),
+      ...(type === 'technical' ? {
+        subtype: subtype || undefined,
+        difficulty: difficulty || undefined,
+        tags: parsedTags.length > 0 ? parsedTags : undefined,
+        codeSnippet,
+      } : {}),
     });
   };
 
@@ -203,6 +221,84 @@ export function QuestionForm({
               <span className="text-xs text-gray-500">
                 (Situation, Task, Action, Result)
               </span>
+            </div>
+          )}
+
+          {/* Technical-specific fields */}
+          {type === 'technical' && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Subtype</label>
+                  <select
+                    value={subtype}
+                    onChange={(e) => setSubtype(e.target.value as TechnicalSubtype | '')}
+                    className="input-field"
+                  >
+                    <option value="">Select subtype...</option>
+                    <option value="coding">Coding</option>
+                    <option value="system-design">System Design</option>
+                    <option value="knowledge">Knowledge</option>
+                    <option value="take-home">Take-Home</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Difficulty</label>
+                  <select
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value as Difficulty | '')}
+                    className="input-field"
+                  >
+                    <option value="">Select difficulty...</option>
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Tags (comma separated)</label>
+                <input
+                  type="text"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  className="input-field"
+                  placeholder="e.g., Arrays, Dynamic Programming, Trees"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Code className="w-4 h-4 text-technical-600" />
+                  <label className="text-sm font-medium">Code Snippet (optional)</label>
+                </div>
+                <div className="space-y-2">
+                  <select
+                    value={codeLanguage}
+                    onChange={(e) => setCodeLanguage(e.target.value)}
+                    className="input-field"
+                  >
+                    <option value="">Language...</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="typescript">TypeScript</option>
+                    <option value="python">Python</option>
+                    <option value="java">Java</option>
+                    <option value="cpp">C++</option>
+                    <option value="go">Go</option>
+                    <option value="rust">Rust</option>
+                    <option value="sql">SQL</option>
+                    <option value="text">Plain Text</option>
+                  </select>
+                  <textarea
+                    value={codeContent}
+                    onChange={(e) => setCodeContent(e.target.value)}
+                    className="input-field font-mono text-sm"
+                    rows={6}
+                    placeholder="Paste your code snippet here..."
+                  />
+                </div>
+              </div>
             </div>
           )}
 

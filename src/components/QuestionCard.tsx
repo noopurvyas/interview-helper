@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Star, ChevronDown, ChevronUp, Edit2, Trash2, Zap } from 'lucide-react';
+import { Star, ChevronDown, ChevronUp, Edit2, Trash2, Zap, Code } from 'lucide-react';
 import type { Question } from '../db/indexeddb';
 
 interface QuestionCardProps {
@@ -38,7 +38,7 @@ export function QuestionCard({
     <div className={`${cardClass} animate-fade-in`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
             <span className={`badge ${
               question.type === 'behavioral'
                 ? 'badge-behavioral'
@@ -47,10 +47,36 @@ export function QuestionCard({
               {question.type.charAt(0).toUpperCase() + question.type.slice(1)}
             </span>
             <span className="badge badge-bookmarks">{question.company}</span>
+            {question.subtype && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium">
+                {question.subtype === 'system-design' ? 'System Design' : question.subtype === 'take-home' ? 'Take-Home' : question.subtype.charAt(0).toUpperCase() + question.subtype.slice(1)}
+              </span>
+            )}
+            {question.difficulty && (
+              <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                question.difficulty === 'easy' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                question.difficulty === 'medium' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' :
+                'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+              }`}>
+                {question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1)}
+              </span>
+            )}
           </div>
           <p className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             {question.question}
           </p>
+          {question.tags && question.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-2">
+              {question.tags.map((tag, i) => (
+                <span
+                  key={i}
+                  className="inline-block px-2 py-0.5 bg-technical-100 dark:bg-technical-900/20 text-technical-700 dark:text-technical-300 text-xs rounded"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <button
           onClick={() => onToggleFavorite(question.id)}
@@ -72,6 +98,21 @@ export function QuestionCard({
         <span>Practiced: {question.practiceCount} times</span>
         <span>Last: {lastPracticed}</span>
       </div>
+
+      {/* Code snippet */}
+      {question.codeSnippet && (
+        <div className="mb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Code className="w-4 h-4 text-technical-500" />
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+              {question.codeSnippet.language}
+            </span>
+          </div>
+          <pre className="bg-gray-900 text-gray-100 text-sm rounded-lg p-4 overflow-x-auto">
+            <code>{question.codeSnippet.code}</code>
+          </pre>
+        </div>
+      )}
 
       {/* Answers section */}
       <div className="border-t border-gray-200 dark:border-gray-700 pt-4">

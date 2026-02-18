@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Plus, Loader } from 'lucide-react';
+import { Plus, Loader, Zap } from 'lucide-react';
 import { useQuestions } from '../hooks/useQuestions';
 import { useSearch } from '../hooks/useSearch';
 import { QuestionCard } from '../components/QuestionCard';
 import { QuestionForm } from '../components/QuestionForm';
+import { PracticeMode } from '../components/PracticeMode';
 import { SearchBar } from '../components/SearchBar';
 import { FilterSidebar } from '../components/FilterSidebar';
+import type { TechnicalSubtype, Difficulty } from '../db/indexeddb';
 
 export function TechnicalQuestionsPage() {
   const { questions, companies, loading, loadByType, addQuestion, updateQuestion, deleteQuestion, toggleFavorite, incrementPracticeCount } = useQuestions();
@@ -13,6 +15,9 @@ export function TechnicalQuestionsPage() {
   const [showForm, setShowForm] = useState(false);
   const [selectedCompanies, setSelectedCompanies] = useState<string[]>([]);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [selectedSubtype, setSelectedSubtype] = useState<TechnicalSubtype | ''>('');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | ''>('');
+  const [showPractice, setShowPractice] = useState(false);
 
   const { query, results, handleSearch, clearSearch } = useSearch(async (q) => {
     const allQuestions = await Promise.resolve(questions);
@@ -29,7 +34,9 @@ export function TechnicalQuestionsPage() {
     (q) =>
       q.type === 'technical' &&
       (selectedCompanies.length === 0 || selectedCompanies.includes(q.company)) &&
-      (!showFavorites || q.isFavorite)
+      (!showFavorites || q.isFavorite) &&
+      (!selectedSubtype || q.subtype === selectedSubtype) &&
+      (!selectedDifficulty || q.difficulty === selectedDifficulty)
   );
 
   const handleSubmit = async (data: any) => {
@@ -70,16 +77,60 @@ export function TechnicalQuestionsPage() {
                 placeholder="Search technical questions..."
               />
             </div>
-            <button
-              onClick={() => {
-                setEditingQuestion(null);
-                setShowForm(true);
-              }}
-              className="btn-technical flex items-center justify-center space-x-2"
+            <div className="flex gap-2">
+              {displayQuestions.length > 0 && (
+                <button
+                  onClick={() => setShowPractice(true)}
+                  className="btn-secondary flex items-center justify-center space-x-2"
+                >
+                  <Zap className="w-5 h-5" />
+                  <span>Practice</span>
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setEditingQuestion(null);
+                  setShowForm(true);
+                }}
+                className="btn-technical flex items-center justify-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Add Question</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Subtype & Difficulty filters */}
+          <div className="flex flex-wrap gap-3">
+            <select
+              value={selectedSubtype}
+              onChange={(e) => setSelectedSubtype(e.target.value as TechnicalSubtype | '')}
+              className="input-field w-auto text-sm"
             >
-              <Plus className="w-5 h-5" />
-              <span>Add Question</span>
-            </button>
+              <option value="">All Subtypes</option>
+              <option value="coding">Coding</option>
+              <option value="system-design">System Design</option>
+              <option value="knowledge">Knowledge</option>
+              <option value="take-home">Take-Home</option>
+            </select>
+            <select
+              value={selectedDifficulty}
+              onChange={(e) => setSelectedDifficulty(e.target.value as Difficulty | '')}
+              className="input-field w-auto text-sm"
+            >
+              <option value="">All Difficulties</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+            {(selectedSubtype || selectedDifficulty) && (
+              <button
+                onClick={() => { setSelectedSubtype(''); setSelectedDifficulty(''); }}
+                className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 underline"
+              >
+                Clear filters
+              </button>
+            )}
           </div>
 
           {loading && (
@@ -117,11 +168,20 @@ export function TechnicalQuestionsPage() {
         <QuestionForm
           question={editingQuestion}
           companies={companies}
+          defaultType="technical"
           onSubmit={handleSubmit}
           onCancel={() => {
             setShowForm(false);
             setEditingQuestion(null);
           }}
+        />
+      )}
+
+      {showPractice && (
+        <PracticeMode
+          questions={displayQuestions}
+          onPractice={incrementPracticeCount}
+          onClose={() => setShowPractice(false)}
         />
       )}
     </div>

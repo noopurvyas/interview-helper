@@ -66,6 +66,14 @@ export const BEHAVIORAL_TEMPLATES: { category: string; questions: string[] }[] =
   },
 ];
 
+export type TechnicalSubtype = 'coding' | 'system-design' | 'knowledge' | 'take-home';
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
+export interface CodeSnippet {
+  language: string;
+  code: string;
+}
+
 export interface Question {
   id: string;
   type: 'behavioral' | 'technical';
@@ -76,6 +84,11 @@ export interface Question {
   practiceCount: number;
   lastPracticed: number | null;
   createdAt: number;
+  // Technical-specific fields
+  subtype?: TechnicalSubtype;
+  difficulty?: Difficulty;
+  tags?: string[];
+  codeSnippet?: CodeSnippet;
 }
 
 export type BookmarkStatus = 'unread' | 'in-progress' | 'completed';
