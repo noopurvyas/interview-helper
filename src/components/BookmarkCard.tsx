@@ -1,26 +1,57 @@
-import { ExternalLink, Edit2, Trash2 } from 'lucide-react';
-import type { Bookmark } from '../db/indexeddb';
+import { ExternalLink, Edit2, Trash2, Circle, Loader, CheckCircle2 } from 'lucide-react';
+import type { Bookmark, BookmarkStatus } from '../db/indexeddb';
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
   onEdit: (bookmark: Bookmark) => void;
   onDelete: (id: string) => void;
+  onStatusChange: (bookmark: Bookmark, status: BookmarkStatus) => void;
 }
 
-const resourceTypeColors = {
+const resourceTypeColors: Record<string, string> = {
   blog: 'badge-bookmarks',
   video: 'badge-technical',
   course: 'badge-behavioral',
+  podcast: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300',
+  docs: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
   other: 'badge-bookmarks',
 };
 
-export function BookmarkCard({ bookmark, onEdit, onDelete }: BookmarkCardProps) {
-  const badgeClass = resourceTypeColors[bookmark.resourceType];
+const statusConfig: Record<BookmarkStatus, { icon: React.ReactNode; label: string; color: string }> = {
+  unread: {
+    icon: <Circle className="w-3.5 h-3.5" />,
+    label: 'Unread',
+    color: 'text-gray-400',
+  },
+  'in-progress': {
+    icon: <Loader className="w-3.5 h-3.5" />,
+    label: 'Reading',
+    color: 'text-amber-500',
+  },
+  completed: {
+    icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+    label: 'Done',
+    color: 'text-green-500',
+  },
+};
+
+const statusCycle: BookmarkStatus[] = ['unread', 'in-progress', 'completed'];
+
+export function BookmarkCard({ bookmark, onEdit, onDelete, onStatusChange }: BookmarkCardProps) {
+  const badgeClass = resourceTypeColors[bookmark.resourceType] || resourceTypeColors.other;
+  const status = statusConfig[bookmark.status || 'unread'];
+
+  const cycleStatus = () => {
+    const current = bookmark.status || 'unread';
+    const idx = statusCycle.indexOf(current);
+    const next = statusCycle[(idx + 1) % statusCycle.length];
+    onStatusChange(bookmark, next);
+  };
 
   return (
-    <div className="card-bookmarks animate-fade-in">
+    <div className={`card-bookmarks animate-fade-in ${bookmark.status === 'completed' ? 'opacity-75' : ''}`}>
       <div className="flex items-start justify-between gap-4 mb-3">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1">
             {bookmark.title}
           </h3>
@@ -34,6 +65,14 @@ export function BookmarkCard({ bookmark, onEdit, onDelete }: BookmarkCardProps) 
             <ExternalLink className="w-3 h-3 flex-shrink-0" />
           </a>
         </div>
+        <button
+          onClick={cycleStatus}
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${status.color}`}
+          title={`Status: ${status.label} (click to change)`}
+        >
+          {status.icon}
+          <span>{status.label}</span>
+        </button>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-3">
@@ -43,6 +82,11 @@ export function BookmarkCard({ bookmark, onEdit, onDelete }: BookmarkCardProps) 
         {bookmark.category && (
           <span className="badge bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
             {bookmark.category}
+          </span>
+        )}
+        {bookmark.collection && (
+          <span className="badge bg-behavioral-100 dark:bg-behavioral-900/30 text-behavioral-700 dark:text-behavioral-300">
+            {bookmark.collection}
           </span>
         )}
       </div>

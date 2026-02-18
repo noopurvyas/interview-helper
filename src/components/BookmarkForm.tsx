@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { X } from 'lucide-react';
-import type { Bookmark } from '../db/indexeddb';
+import { type Bookmark, type ResourceType, type BookmarkStatus, detectResourceType } from '../db/indexeddb';
 
 interface BookmarkFormProps {
   bookmark?: Bookmark;
   categories: string[];
+  collections: string[];
   onSubmit: (bookmark: Omit<Bookmark, 'id'>) => void;
   onCancel: () => void;
 }
@@ -12,17 +13,35 @@ interface BookmarkFormProps {
 export function BookmarkForm({
   bookmark,
   categories,
+  collections,
   onSubmit,
   onCancel,
 }: BookmarkFormProps) {
   const [title, setTitle] = useState(bookmark?.title || '');
   const [url, setUrl] = useState(bookmark?.url || '');
-  const [resourceType, setResourceType] = useState<'blog' | 'video' | 'course' | 'other'>(
+  const [resourceType, setResourceType] = useState<ResourceType>(
     bookmark?.resourceType || 'blog'
   );
   const [category, setCategory] = useState(bookmark?.category || '');
   const [newCategory, setNewCategory] = useState('');
+  const [collection, setCollection] = useState(bookmark?.collection || '');
+  const [newCollection, setNewCollection] = useState('');
+  const [status, setStatus] = useState<BookmarkStatus>(bookmark?.status || 'unread');
   const [notes, setNotes] = useState(bookmark?.notes || '');
+  const [autoDetected, setAutoDetected] = useState(false);
+
+  const handleUrlBlur = () => {
+    if (!url.trim() || bookmark) return;
+    try {
+      const detected = detectResourceType(url);
+      if (detected !== 'other') {
+        setResourceType(detected);
+        setAutoDetected(true);
+      }
+    } catch {
+      // invalid URL, ignore
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +56,8 @@ export function BookmarkForm({
       url,
       resourceType,
       category: newCategory || category || undefined,
+      collection: newCollection || collection || undefined,
+      status,
       notes: notes || undefined,
       createdAt: bookmark?.createdAt || Date.now(),
     });
@@ -44,8 +65,8 @@ export function BookmarkForm({
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full">
-        <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold">
             {bookmark ? 'Edit Bookmark' : 'Add Bookmark'}
           </h2>
@@ -74,26 +95,81 @@ export function BookmarkForm({
             <input
               type="url"
               value={url}
-              onChange={(e) => setUrl(e.target.value)}
+              onChange={(e) => {
+                setUrl(e.target.value);
+                setAutoDetected(false);
+              }}
+              onBlur={handleUrlBlur}
               className="input-field"
               placeholder="https://..."
             />
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Type
+                {autoDetected && (
+                  <span className="text-xs text-bookmarks-500 ml-1">(auto)</span>
+                )}
+              </label>
+              <select
+                value={resourceType}
+                onChange={(e) => {
+                  setResourceType(e.target.value as ResourceType);
+                  setAutoDetected(false);
+                }}
+                className="input-field"
+              >
+                <option value="blog">Blog</option>
+                <option value="video">Video</option>
+                <option value="course">Course</option>
+                <option value="podcast">Podcast</option>
+                <option value="docs">Docs</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Status</label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as BookmarkStatus)}
+                className="input-field"
+              >
+                <option value="unread">Unread</option>
+                <option value="in-progress">In Progress</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+          </div>
+
           <div>
-            <label className="block text-sm font-medium mb-1">Type</label>
+            <label className="block text-sm font-medium mb-1">Collection</label>
             <select
-              value={resourceType}
-              onChange={(e) =>
-                setResourceType(e.target.value as 'blog' | 'video' | 'course' | 'other')
-              }
+              value={collection}
+              onChange={(e) => {
+                setCollection(e.target.value);
+                setNewCollection('');
+              }}
               className="input-field"
             >
-              <option value="blog">Blog</option>
-              <option value="video">Video</option>
-              <option value="course">Course</option>
-              <option value="other">Other</option>
+              <option value="">None</option>
+              {collections.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
+            {collection === '' && (
+              <input
+                type="text"
+                placeholder="Or create new collection"
+                value={newCollection}
+                onChange={(e) => setNewCollection(e.target.value)}
+                className="input-field mt-2"
+              />
+            )}
           </div>
 
           <div>

@@ -19,14 +19,43 @@ export interface Question {
   createdAt: number;
 }
 
+export type BookmarkStatus = 'unread' | 'in-progress' | 'completed';
+export type ResourceType = 'blog' | 'video' | 'course' | 'podcast' | 'docs' | 'other';
+
 export interface Bookmark {
   id: string;
   title: string;
   url: string;
-  resourceType: 'blog' | 'video' | 'course' | 'other';
+  resourceType: ResourceType;
   category?: string;
+  collection?: string;
   notes?: string;
+  status: BookmarkStatus;
   createdAt: number;
+}
+
+export function detectResourceType(url: string): ResourceType {
+  const hostname = new URL(url).hostname.toLowerCase();
+  const path = new URL(url).pathname.toLowerCase();
+
+  if (/youtube\.com|youtu\.be|vimeo\.com|twitch\.tv/.test(hostname)) return 'video';
+  if (/udemy\.com|coursera\.org|educative\.io|leetcode\.com|hackerrank\.com/.test(hostname)) return 'course';
+  if (/medium\.com|dev\.to|hashnode\.dev|substack\.com|blog/.test(hostname)) return 'blog';
+  if (/spotify\.com|podcasts\.apple\.com|anchor\.fm/.test(hostname) || /podcast/.test(path)) return 'podcast';
+  if (/docs\.|documentation|wiki|readme|\.io\/docs|developer\./.test(hostname + path)) return 'docs';
+
+  return 'other';
+}
+
+export async function getUniqueCollections(): Promise<string[]> {
+  const database = await initDB();
+  const allBookmarks = await database.getAll(BOOKMARKS_STORE);
+  const collections = new Set(
+    allBookmarks
+      .filter((b: Bookmark) => b.collection)
+      .map((b: Bookmark) => b.collection!)
+  );
+  return Array.from(collections).sort();
 }
 
 export interface CompanyNote {
@@ -193,7 +222,7 @@ export async function deleteBookmark(id: string): Promise<void> {
 }
 
 export async function getBookmarksByType(
-  resourceType: 'blog' | 'video' | 'course' | 'other'
+  resourceType: ResourceType
 ): Promise<Bookmark[]> {
   const database = await initDB();
   return database.getAllFromIndex(BOOKMARKS_STORE, 'resourceType', resourceType);

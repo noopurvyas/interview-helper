@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   type Bookmark,
+  type ResourceType,
   addBookmark as dbAddBookmark,
   updateBookmark as dbUpdateBookmark,
   deleteBookmark as dbDeleteBookmark,
@@ -9,6 +10,7 @@ import {
   searchBookmarks,
   getBookmarksByCategory,
   getUniqueResourceCategories,
+  getUniqueCollections,
 } from '../db/indexeddb';
 
 export function useBookmarks() {
@@ -16,6 +18,7 @@ export function useBookmarks() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
+  const [collections, setCollections] = useState<string[]>([]);
 
   // Load all bookmarks
   const loadBookmarks = useCallback(async () => {
@@ -25,8 +28,12 @@ export function useBookmarks() {
       const data = await getAllBookmarks();
       setBookmarks(data);
 
-      const uniqueCategories = await getUniqueResourceCategories();
+      const [uniqueCategories, uniqueCollections] = await Promise.all([
+        getUniqueResourceCategories(),
+        getUniqueCollections(),
+      ]);
       setCategories(uniqueCategories);
+      setCollections(uniqueCollections);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load bookmarks');
     } finally {
@@ -36,7 +43,7 @@ export function useBookmarks() {
 
   // Load bookmarks by type
   const loadByType = useCallback(
-    async (resourceType: 'blog' | 'video' | 'course' | 'other') => {
+    async (resourceType: ResourceType) => {
       setLoading(true);
       setError(null);
       try {
@@ -140,6 +147,7 @@ export function useBookmarks() {
   return {
     bookmarks,
     categories,
+    collections,
     loading,
     error,
     loadBookmarks,
