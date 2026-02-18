@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold;
+  }
+
+  h1 {
+    @apply text-4xl;
+  }
+
+  h2 {
+    @apply text-3xl;
+  }
+
+  h3 {
+    @apply text-2xl;
+  }
+
+  a {
+    @apply text-behavioral-600 dark:text-behavioral-400 hover:underline transition-colors;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 rounded-lg font-semibold transition-all duration-200 text-white shadow-md hover:shadow-lg hover:scale-105 active:scale-95;
+  }
+
+  .btn-behavioral {
+    @apply btn-primary bg-behavioral-600 hover:bg-behavioral-700;
+  }
+
+  .btn-technical {
+    @apply btn-primary bg-technical-600 hover:bg-technical-700;
+  }
+
+  .btn-bookmarks {
+    @apply btn-primary bg-bookmarks-600 hover:bg-bookmarks-700;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600;
+  }
+
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-shadow p-4 border border-gray-100 dark:border-gray-700;
+  }
+
+  .card-behavioral {
+    @apply card border-l-4 border-l-behavioral-500;
+  }
+
+  .card-technical {
+    @apply card border-l-4 border-l-technical-500;
+  }
+
+  .card-bookmarks {
+    @apply card border-l-4 border-l-bookmarks-500;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-behavioral-500 transition-colors;
+  }
+
+  .badge {
+    @apply inline-block px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-behavioral {
+    @apply badge bg-behavioral-100 dark:bg-behavioral-900 text-behavioral-700 dark:text-behavioral-200;
+  }
+
+  .badge-technical {
+    @apply badge bg-technical-100 dark:bg-technical-900 text-technical-700 dark:text-technical-200;
+  }
+
+  .badge-bookmarks {
+    @apply badge bg-bookmarks-100 dark:bg-bookmarks-900 text-bookmarks-700 dark:text-bookmarks-200;
+  }
+}
