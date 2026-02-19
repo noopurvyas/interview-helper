@@ -1,12 +1,15 @@
-import { useState } from 'react';
-import { Plus, Loader, Zap } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
+import { Plus, Zap } from 'lucide-react';
 import { useQuestions } from '../hooks/useQuestions';
 import { useSearch } from '../hooks/useSearch';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { QuestionCard } from '../components/QuestionCard';
 import { QuestionForm } from '../components/QuestionForm';
 import { PracticeMode } from '../components/PracticeMode';
 import { SearchBar } from '../components/SearchBar';
 import { FilterSidebar } from '../components/FilterSidebar';
+import { EmptyState } from '../components/EmptyState';
+import { SkeletonList } from '../components/SkeletonCard';
 import type { TechnicalSubtype, Difficulty } from '../db/indexeddb';
 
 export function TechnicalQuestionsPage() {
@@ -18,6 +21,12 @@ export function TechnicalQuestionsPage() {
   const [selectedSubtype, setSelectedSubtype] = useState<TechnicalSubtype | ''>('');
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | ''>('');
   const [showPractice, setShowPractice] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useKeyboardShortcuts(useMemo(() => ({
+    '/': () => searchRef.current?.focus(),
+    'n': () => { setEditingQuestion(null); setShowForm(true); },
+  }), []));
 
   const { query, results, handleSearch, clearSearch } = useSearch(async (q) => {
     const allQuestions = await Promise.resolve(questions);
@@ -71,6 +80,7 @@ export function TechnicalQuestionsPage() {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <SearchBar
+                ref={searchRef}
                 query={query}
                 onSearch={handleSearch}
                 onClear={clearSearch}
@@ -133,17 +143,14 @@ export function TechnicalQuestionsPage() {
             )}
           </div>
 
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader className="w-6 h-6 animate-spin text-technical-600" />
-            </div>
-          )}
+          {loading && <SkeletonList count={3} />}
 
           {!loading && displayQuestions.length === 0 && (
-            <div className="text-center py-12 text-gray-600 dark:text-gray-400">
-              <p className="text-lg">No questions found</p>
-              <p className="text-sm mt-2">Get started by adding your first question!</p>
-            </div>
+            query ? (
+              <EmptyState icon="search" title="No results found" description={`No questions match "${query}". Try a different search term.`} />
+            ) : (
+              <EmptyState icon="questions" title="No questions yet" description="Add your first technical question to start tracking. Press N to add." />
+            )
           )}
 
           <div className="grid gap-4">

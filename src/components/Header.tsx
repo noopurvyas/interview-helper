@@ -57,7 +57,7 @@ export function Header({ onExportClick }: HeaderProps) {
               onClick={onExportClick}
               className="btn-secondary hidden sm:inline-block"
             >
-              Export
+              Import / Export
             </button>
             <button
               onClick={toggleTheme}

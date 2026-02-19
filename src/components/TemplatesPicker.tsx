@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { Modal } from './Modal';
 import { BEHAVIORAL_TEMPLATES } from '../db/indexeddb';
 
 interface TemplatesPickerProps {
@@ -13,7 +14,7 @@ export function TemplatesPicker({ onSelect, onClose }: TemplatesPickerProps) {
   );
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+    <Modal onClose={onClose} label="Common Behavioral Questions">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col">
         <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between shrink-0">
           <h2 className="text-lg font-bold">Common Behavioral Questions</h2>
@@ -63,6 +64,6 @@ export function TemplatesPicker({ onSelect, onClose }: TemplatesPickerProps) {
           ))}
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

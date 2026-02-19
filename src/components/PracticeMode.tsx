@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { X, Eye, EyeOff, ChevronLeft, ChevronRight, Shuffle, Zap } from 'lucide-react';
+import { Modal } from './Modal';
 import type { Question } from '../db/indexeddb';
 
 interface PracticeModeProps {
@@ -51,19 +52,19 @@ export function PracticeMode({ questions, onPractice, onClose }: PracticeModePro
 
   if (!current) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <Modal onClose={onClose} label="Practice Mode">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full p-8 text-center">
           <p className="text-lg text-gray-600 dark:text-gray-400">No questions to practice.</p>
           <button onClick={onClose} className="btn-secondary mt-4">Close</button>
         </div>
-      </div>
+      </Modal>
     );
   }
 
   const primaryAnswer = current.answerVariations.find((a) => a.isPrimary) || current.answerVariations[0];
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+    <Modal onClose={onClose} label="Practice Mode">
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between shrink-0">
@@ -213,6 +214,6 @@ export function PracticeMode({ questions, onPractice, onClose }: PracticeModePro
           />
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

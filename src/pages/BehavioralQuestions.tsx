@@ -1,13 +1,16 @@
-import { useState } from 'react';
-import { Plus, Loader, Dumbbell, BookTemplate } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
+import { Plus, Dumbbell, BookTemplate } from 'lucide-react';
 import { useQuestions } from '../hooks/useQuestions';
 import { useSearch } from '../hooks/useSearch';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { QuestionCard } from '../components/QuestionCard';
 import { QuestionForm } from '../components/QuestionForm';
 import { SearchBar } from '../components/SearchBar';
 import { FilterSidebar } from '../components/FilterSidebar';
 import { PracticeMode } from '../components/PracticeMode';
 import { TemplatesPicker } from '../components/TemplatesPicker';
+import { EmptyState } from '../components/EmptyState';
+import { SkeletonList } from '../components/SkeletonCard';
 import type { Question } from '../db/indexeddb';
 
 export function BehavioralQuestionsPage() {
@@ -19,6 +22,12 @@ export function BehavioralQuestionsPage() {
   const [showPractice, setShowPractice] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [prefillQuestion, setPrefillQuestion] = useState('');
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useKeyboardShortcuts(useMemo(() => ({
+    '/': () => searchRef.current?.focus(),
+    'n': () => { setEditingQuestion(null); setPrefillQuestion(''); setShowForm(true); },
+  }), []));
 
   const { query, results, handleSearch, clearSearch } = useSearch(async (q) => {
     return questions.filter(
@@ -78,6 +87,7 @@ export function BehavioralQuestionsPage() {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <SearchBar
+                ref={searchRef}
                 query={query}
                 onSearch={handleSearch}
                 onClear={clearSearch}
@@ -117,17 +127,14 @@ export function BehavioralQuestionsPage() {
             </div>
           </div>
 
-          {loading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader className="w-6 h-6 animate-spin text-behavioral-600" />
-            </div>
-          )}
+          {loading && <SkeletonList count={3} />}
 
           {!loading && displayQuestions.length === 0 && (
-            <div className="text-center py-12 text-gray-600 dark:text-gray-400">
-              <p className="text-lg">No questions found</p>
-              <p className="text-sm mt-2">Get started by adding your first question or pick from templates!</p>
-            </div>
+            query ? (
+              <EmptyState icon="search" title="No results found" description={`No questions match "${query}". Try a different search term.`} />
+            ) : (
+              <EmptyState icon="questions" title="No questions yet" description="Get started by adding your first behavioral question or pick from templates! Press N to add." />
+            )
           )}
 
           <div className="grid gap-4">
