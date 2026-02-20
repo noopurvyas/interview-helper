@@ -100,8 +100,29 @@ export function QuestionForm({
     setAnswers(answers.map((a) => (a.id === id ? { ...a, keyPoints } : a)));
   };
 
+  // Store raw key-points text per answer so commas aren't stripped while typing
+  const [keyPointsText, setKeyPointsText] = useState<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    for (const a of question?.answerVariations || answers) {
+      map[a.id] = a.keyPoints.join(', ');
+    }
+    return map;
+  });
+
+  const handleKeyPointsChange = (id: string, raw: string) => {
+    setKeyPointsText((prev) => ({ ...prev, [id]: raw }));
+  };
+
+  const handleKeyPointsBlur = (id: string) => {
+    const raw = keyPointsText[id] || '';
+    const parsed = raw.split(',').map((k) => k.trim()).filter(Boolean);
+    updateKeyPoints(id, parsed);
+  };
+
   const addAnswer = () => {
-    setAnswers([...answers, emptyAnswer(useStarMode)]);
+    const newAns = emptyAnswer(useStarMode);
+    setAnswers([...answers, newAns]);
+    setKeyPointsText((prev) => ({ ...prev, [newAns.id]: '' }));
   };
 
   const removeAnswer = (id: string) => {
@@ -364,13 +385,9 @@ export function QuestionForm({
                     </label>
                     <input
                       type="text"
-                      value={answer.keyPoints.join(', ')}
-                      onChange={(e) =>
-                        updateKeyPoints(
-                          answer.id,
-                          e.target.value.split(',').map((k) => k.trim()).filter(Boolean)
-                        )
-                      }
+                      value={keyPointsText[answer.id] ?? answer.keyPoints.join(', ')}
+                      onChange={(e) => handleKeyPointsChange(answer.id, e.target.value)}
+                      onBlur={() => handleKeyPointsBlur(answer.id)}
                       className="input-field"
                       placeholder="e.g., Point 1, Point 2, Point 3"
                     />

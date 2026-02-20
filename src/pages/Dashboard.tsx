@@ -16,12 +16,12 @@ import {
 } from 'lucide-react';
 import type { Question } from '../db/indexeddb';
 
-function dayKey(ts: number): string {
+export function dayKey(ts: number): string {
   const d = new Date(ts);
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-function calcStreak(questions: Question[]): number {
+export function calcStreak(questions: Question[]): number {
   const activeDays = new Set<string>();
   for (const q of questions) {
     if (q.lastPracticed) activeDays.add(dayKey(q.lastPracticed));
@@ -45,7 +45,7 @@ function calcStreak(questions: Question[]): number {
   return streak;
 }
 
-function getWeeklyActivity(questions: Question[]): { label: string; count: number }[] {
+export function getWeeklyActivity(questions: Question[]): { label: string; count: number }[] {
   const days: { label: string; count: number }[] = [];
   const now = new Date();
 
@@ -64,7 +64,7 @@ function getWeeklyActivity(questions: Question[]): { label: string; count: numbe
   return days;
 }
 
-interface CompanyReadiness {
+export interface CompanyReadiness {
   name: string;
   answered: number;
   total: number;
@@ -72,7 +72,7 @@ interface CompanyReadiness {
   stale: boolean;
 }
 
-function getCompanyReadiness(questions: Question[]): CompanyReadiness[] {
+export function getCompanyReadiness(questions: Question[]): CompanyReadiness[] {
   const map = new Map<string, { total: number; answered: number; lastPracticed: number | null }>();
   for (const q of questions) {
     if (!q.company) continue;
