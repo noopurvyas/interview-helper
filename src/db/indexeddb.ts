@@ -77,7 +77,7 @@ export interface CodeSnippet {
 export interface Question {
   id: string;
   type: 'behavioral' | 'technical';
-  company: string;
+  company?: string;
   question: string;
   answerVariations: AnswerVariation[];
   isFavorite: boolean;
@@ -250,7 +250,7 @@ export async function searchQuestions(query: string): Promise<Question[]> {
   return allQuestions.filter(
     (q) =>
       q.question.toLowerCase().includes(lowerQuery) ||
-      q.company.toLowerCase().includes(lowerQuery) ||
+      (q.company?.toLowerCase().includes(lowerQuery) ?? false) ||
       q.answerVariations.some((av: AnswerVariation) =>
         av.content.toLowerCase().includes(lowerQuery)
       )
@@ -260,7 +260,7 @@ export async function searchQuestions(query: string): Promise<Question[]> {
 export async function getUniqueCompanies(): Promise<string[]> {
   const database = await initDB();
   const allQuestions = await database.getAll(QUESTIONS_STORE);
-  const companies = new Set(allQuestions.map((q) => q.company));
+  const companies = new Set(allQuestions.map((q) => q.company).filter(Boolean) as string[]);
   return Array.from(companies).sort();
 }
 
@@ -363,10 +363,12 @@ export async function getCompanyStats(): Promise<CompanyStats[]> {
   const statsMap = new Map<string, CompanyStats>();
 
   for (const q of allQuestions) {
-    let stats = statsMap.get(q.company);
+    const companyName = q.company || '';
+    if (!companyName) continue; // skip questions without a company
+    let stats = statsMap.get(companyName);
     if (!stats) {
-      stats = { name: q.company, behavioral: 0, technical: 0, total: 0, lastPracticed: null };
-      statsMap.set(q.company, stats);
+      stats = { name: companyName, behavioral: 0, technical: 0, total: 0, lastPracticed: null };
+      statsMap.set(companyName, stats);
     }
     stats.total++;
     if (q.type === 'behavioral') stats.behavioral++;

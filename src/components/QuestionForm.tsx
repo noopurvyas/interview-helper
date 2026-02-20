@@ -52,12 +52,7 @@ export function QuestionForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const selectedCompany = newCompany || company;
-
-    if (!questionText.trim() || !selectedCompany.trim()) {
-      alert('Please fill in all required fields');
-      return;
-    }
+    const selectedCompany = (newCompany || company).trim();
 
     // Filter answers: for STAR mode, check if any STAR field is filled; for free-form check content
     const filteredAnswers = answers.filter((a) => {
@@ -74,7 +69,7 @@ export function QuestionForm({
 
     onSubmit({
       type,
-      company: selectedCompany,
+      company: selectedCompany || undefined,
       question: questionText,
       answerVariations: filteredAnswers,
       isFavorite: question?.isFavorite || false,
@@ -160,7 +155,7 @@ export function QuestionForm({
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Company</label>
+              <label className="block text-sm font-medium mb-2">Company <span className="text-gray-400 font-normal">(optional)</span></label>
               <select
                 value={company}
                 onChange={(e) => {
@@ -169,7 +164,7 @@ export function QuestionForm({
                 }}
                 className="input-field"
               >
-                <option value="">Select or create...</option>
+                <option value="">None (general question)</option>
                 {companies.map((c) => (
                   <option key={c} value={c}>
                     {c}

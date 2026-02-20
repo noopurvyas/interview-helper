@@ -33,8 +33,8 @@ export function TechnicalQuestionsPage() {
     return allQuestions.filter(
       (q_item) =>
         (q_item.question.toLowerCase().includes(q.toLowerCase()) ||
-          q_item.company.toLowerCase().includes(q.toLowerCase())) &&
-        (selectedCompanies.length === 0 || selectedCompanies.includes(q_item.company)) &&
+          (q_item.company?.toLowerCase().includes(q.toLowerCase()) ?? false)) &&
+        (selectedCompanies.length === 0 || selectedCompanies.includes(q_item.company || '')) &&
         (!showFavorites || q_item.isFavorite)
     );
   });
@@ -42,7 +42,7 @@ export function TechnicalQuestionsPage() {
   const displayQuestions = query ? results : questions.filter(
     (q) =>
       q.type === 'technical' &&
-      (selectedCompanies.length === 0 || selectedCompanies.includes(q.company)) &&
+      (selectedCompanies.length === 0 || selectedCompanies.includes(q.company || '')) &&
       (!showFavorites || q.isFavorite) &&
       (!selectedSubtype || q.subtype === selectedSubtype) &&
       (!selectedDifficulty || q.difficulty === selectedDifficulty)

@@ -75,6 +75,7 @@ interface CompanyReadiness {
 function getCompanyReadiness(questions: Question[]): CompanyReadiness[] {
   const map = new Map<string, { total: number; answered: number; lastPracticed: number | null }>();
   for (const q of questions) {
+    if (!q.company) continue;
     let entry = map.get(q.company);
     if (!entry) {
       entry = { total: 0, answered: 0, lastPracticed: null };
@@ -321,7 +322,7 @@ export function DashboardPage() {
                     {q.question}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-gray-500">{q.company}</span>
+                    {q.company && <span className="text-xs text-gray-500">{q.company}</span>}
                     <span className={`text-xs ${q.type === 'behavioral' ? 'text-behavioral-500' : 'text-technical-500'}`}>
                       {q.type}
                     </span>
@@ -349,7 +350,7 @@ export function DashboardPage() {
                   <p className="font-medium text-gray-900 dark:text-white truncate">
                     {q.question}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">{q.company}</p>
+                  {q.company && <p className="text-xs text-gray-500 mt-1">{q.company}</p>}
                 </div>
               ))}
             </div>

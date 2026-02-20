@@ -46,7 +46,7 @@ export function QuestionCard({
             }`}>
               {question.type.charAt(0).toUpperCase() + question.type.slice(1)}
             </span>
-            <span className="badge badge-bookmarks">{question.company}</span>
+            {question.company && <span className="badge badge-bookmarks">{question.company}</span>}
             {question.subtype && (
               <span className="text-xs px-1.5 py-0.5 rounded bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium">
                 {question.subtype === 'system-design' ? 'System Design' : question.subtype === 'take-home' ? 'Take-Home' : question.subtype.charAt(0).toUpperCase() + question.subtype.slice(1)}

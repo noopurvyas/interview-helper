@@ -95,7 +95,8 @@ export function ImportExportModal({ companies, onClose, onImportDone }: ImportEx
       if (yPos > 260) { pdf.addPage(); yPos = 10; }
       pdf.setFontSize(11);
       pdf.setFont('helvetica', 'bold');
-      const qLines = pdf.splitTextToSize(`[${q.company}] ${q.question}`, 185);
+      const prefix = q.company ? `[${q.company}] ` : '';
+      const qLines = pdf.splitTextToSize(`${prefix}${q.question}`, 185);
       pdf.text(qLines, 10, yPos);
       yPos += qLines.length * 5 + 3;
 

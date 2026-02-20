@@ -34,8 +34,8 @@ export function BehavioralQuestionsPage() {
       (q_item) =>
         q_item.type === 'behavioral' &&
         (q_item.question.toLowerCase().includes(q.toLowerCase()) ||
-          q_item.company.toLowerCase().includes(q.toLowerCase())) &&
-        (selectedCompanies.length === 0 || selectedCompanies.includes(q_item.company)) &&
+          (q_item.company?.toLowerCase().includes(q.toLowerCase()) ?? false)) &&
+        (selectedCompanies.length === 0 || selectedCompanies.includes(q_item.company || '')) &&
         (!showFavorites || q_item.isFavorite)
     );
   });
@@ -43,7 +43,7 @@ export function BehavioralQuestionsPage() {
   const displayQuestions = query ? results : questions.filter(
     (q) =>
       q.type === 'behavioral' &&
-      (selectedCompanies.length === 0 || selectedCompanies.includes(q.company)) &&
+      (selectedCompanies.length === 0 || selectedCompanies.includes(q.company || '')) &&
       (!showFavorites || q.isFavorite)
   );
 

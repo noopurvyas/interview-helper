@@ -99,7 +99,7 @@ export function PracticeMode({ questions, onPractice, onClose }: PracticeModePro
               <span className="badge badge-behavioral">
                 {current.type.charAt(0).toUpperCase() + current.type.slice(1)}
               </span>
-              <span className="badge badge-bookmarks">{current.company}</span>
+              {current.company && <span className="badge badge-bookmarks">{current.company}</span>}
             </div>
             <p className="text-xl font-semibold text-gray-900 dark:text-white">
               {current.question}
