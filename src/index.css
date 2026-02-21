@@ -45,6 +45,20 @@
   --color-bookmarks-900: #0F2F2E;
   --color-bookmarks-dark: #134E4A;
 
+  /* Custom colors - Interviews (Purple) */
+  --color-interviews-light: #F3E8FF;
+  --color-interviews-50: #FAF5FF;
+  --color-interviews-100: #F3E8FF;
+  --color-interviews-200: #E9D5FF;
+  --color-interviews-300: #D8B4FE;
+  --color-interviews-400: #C084FC;
+  --color-interviews-500: #A855F7;
+  --color-interviews-600: #9333EA;
+  --color-interviews-700: #7E22CE;
+  --color-interviews-800: #6B21A8;
+  --color-interviews-900: #581C87;
+  --color-interviews-dark: #3B0764;
+
   /* Font family */
   --font-sans: 'Inter', system-ui, sans-serif;
 
@@ -117,6 +131,10 @@
   @apply btn-primary bg-bookmarks-600 hover:bg-bookmarks-700;
 }
 
+@utility btn-interviews {
+  @apply btn-primary bg-interviews-600 hover:bg-interviews-700;
+}
+
 @utility btn-secondary {
   @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600;
 }
@@ -137,6 +155,10 @@
   @apply card border-l-4 border-l-bookmarks-500;
 }
 
+@utility card-interviews {
+  @apply card border-l-4 border-l-interviews-500;
+}
+
 @utility input-field {
   @apply w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-behavioral-500 transition-colors;
 }
@@ -155,4 +177,8 @@
 
 @utility badge-bookmarks {
   @apply badge bg-bookmarks-100 dark:bg-bookmarks-900 text-bookmarks-700 dark:text-bookmarks-200;
+}
+
+@utility badge-interviews {
+  @apply badge bg-interviews-100 dark:bg-interviews-900 text-interviews-700 dark:text-interviews-200;
 }
