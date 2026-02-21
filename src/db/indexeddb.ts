@@ -130,6 +130,29 @@ export async function getUniqueCollections(): Promise<string[]> {
   return Array.from(collections).sort();
 }
 
+export type InterviewType = 'phone' | 'video' | 'onsite' | 'take-home' | 'other';
+export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled';
+export type InterviewRound = 'recruiter' | 'technical' | 'behavioral' | 'system-design' | 'hiring-manager' | 'other';
+
+export interface Interview {
+  id: string;
+  company: string;
+  dateTime: number;
+  duration: number;
+  role?: string;
+  interviewType: InterviewType;
+  round?: InterviewRound;
+  status: InterviewStatus;
+  notes?: string;
+  linkedQuestionIds: string[];
+  location?: string;
+  contactName?: string;
+  contactEmail?: string;
+  icalUid?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface CompanyNote {
   company: string;
   content: string;
@@ -139,10 +162,11 @@ export interface CompanyNote {
 let db: IDBPDatabase | null = null;
 
 const DB_NAME = 'interview-helper';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const QUESTIONS_STORE = 'questions';
 const BOOKMARKS_STORE = 'bookmarks';
 const NOTES_STORE = 'companyNotes';
+const INTERVIEWS_STORE = 'interviews';
 
 async function initDB(): Promise<IDBPDatabase> {
   if (db) return db;
@@ -174,6 +198,18 @@ async function initDB(): Promise<IDBPDatabase> {
       // Create company notes store (v2)
       if (!db.objectStoreNames.contains(NOTES_STORE)) {
         db.createObjectStore(NOTES_STORE, { keyPath: 'company' });
+      }
+
+      // Create interviews store (v3)
+      if (!db.objectStoreNames.contains(INTERVIEWS_STORE)) {
+        const interviewsStore = db.createObjectStore(INTERVIEWS_STORE, {
+          keyPath: 'id',
+        });
+        interviewsStore.createIndex('company', 'company');
+        interviewsStore.createIndex('dateTime', 'dateTime');
+        interviewsStore.createIndex('status', 'status');
+        interviewsStore.createIndex('icalUid', 'icalUid');
+        interviewsStore.createIndex('createdAt', 'createdAt');
       }
     },
   });
@@ -379,4 +415,72 @@ export async function getCompanyStats(): Promise<CompanyStats[]> {
   }
 
   return Array.from(statsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// Interview operations
+export async function addInterview(interview: Omit<Interview, 'id'>): Promise<string> {
+  const database = await initDB();
+  const id = crypto.randomUUID();
+  const newInterview: Interview = { ...interview, id };
+  await database.add(INTERVIEWS_STORE, newInterview);
+  return id;
+}
+
+export async function getInterview(id: string): Promise<Interview | undefined> {
+  const database = await initDB();
+  return database.get(INTERVIEWS_STORE, id);
+}
+
+export async function updateInterview(interview: Interview): Promise<void> {
+  const database = await initDB();
+  await database.put(INTERVIEWS_STORE, interview);
+}
+
+export async function deleteInterview(id: string): Promise<void> {
+  const database = await initDB();
+  await database.delete(INTERVIEWS_STORE, id);
+}
+
+export async function getAllInterviews(): Promise<Interview[]> {
+  const database = await initDB();
+  return database.getAll(INTERVIEWS_STORE);
+}
+
+export async function getInterviewsByCompany(company: string): Promise<Interview[]> {
+  const database = await initDB();
+  return database.getAllFromIndex(INTERVIEWS_STORE, 'company', company);
+}
+
+export async function getInterviewsByStatus(status: InterviewStatus): Promise<Interview[]> {
+  const database = await initDB();
+  return database.getAllFromIndex(INTERVIEWS_STORE, 'status', status);
+}
+
+export async function getUpcomingInterviews(): Promise<Interview[]> {
+  const database = await initDB();
+  const all = await database.getAll(INTERVIEWS_STORE);
+  const now = Date.now();
+  return all
+    .filter((i) => i.dateTime > now && i.status === 'scheduled')
+    .sort((a, b) => a.dateTime - b.dateTime);
+}
+
+export async function getInterviewByIcalUid(uid: string): Promise<Interview | undefined> {
+  const database = await initDB();
+  const results = await database.getAllFromIndex(INTERVIEWS_STORE, 'icalUid', uid);
+  return results[0];
+}
+
+export async function searchInterviews(query: string): Promise<Interview[]> {
+  const database = await initDB();
+  const all = await database.getAll(INTERVIEWS_STORE);
+  const lowerQuery = query.toLowerCase();
+  return all.filter(
+    (i) =>
+      i.company.toLowerCase().includes(lowerQuery) ||
+      (i.role?.toLowerCase().includes(lowerQuery) ?? false) ||
+      (i.notes?.toLowerCase().includes(lowerQuery) ?? false) ||
+      (i.contactName?.toLowerCase().includes(lowerQuery) ?? false) ||
+      (i.location?.toLowerCase().includes(lowerQuery) ?? false)
+  );
 }
