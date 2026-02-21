@@ -166,6 +166,7 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const [practiceQuestion, setPracticeQuestion] = useState<Question | null>(null);
   const [upcomingInterviews, setUpcomingInterviews] = useState<Interview[]>([]);
+  const [renderTime] = useState(() => Date.now());
 
   useEffect(() => {
     getUpcomingInterviews().then((data) => setUpcomingInterviews(data.slice(0, 3)));
@@ -244,7 +245,7 @@ export function DashboardPage() {
           </div>
           <div className="space-y-2">
             {upcomingInterviews.map((interview) => {
-              const isUrgent = interview.dateTime - Date.now() < 24 * 60 * 60 * 1000;
+              const isUrgent = interview.dateTime - renderTime < 24 * 60 * 60 * 1000;
               return (
                 <div
                   key={interview.id}

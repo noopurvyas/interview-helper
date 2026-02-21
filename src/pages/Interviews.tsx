@@ -73,7 +73,7 @@ export function InterviewsPage() {
     );
   });
 
-  const now = Date.now();
+  const [now] = useState(() => Date.now());
   const filteredInterviews = (query ? results : interviews).filter((i) => {
     if (viewMode === 'upcoming' && (i.dateTime <= now || i.status !== 'scheduled')) return false;
     if (selectedStatus && i.status !== selectedStatus) return false;
