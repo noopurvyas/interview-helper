@@ -1,44 +1,55 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, BookOpen, Zap, StickyNote, Loader } from 'lucide-react';
+import { ArrowLeft, Plus, BookOpen, Zap, StickyNote, Calendar, Loader } from 'lucide-react';
 import {
   getQuestionsByTypeAndCompany,
   getCompanyNote,
   saveCompanyNote,
+  getInterviewsByCompany,
   type Question,
+  type Interview,
 } from '../db/indexeddb';
 import { useQuestions } from '../hooks/useQuestions';
+import { useInterviews } from '../hooks/useInterviews';
 import { QuestionCard } from '../components/QuestionCard';
 import { QuestionForm } from '../components/QuestionForm';
+import { InterviewCard } from '../components/InterviewCard';
+import { InterviewForm } from '../components/InterviewForm';
 
-type Tab = 'behavioral' | 'technical' | 'notes';
+type Tab = 'behavioral' | 'technical' | 'notes' | 'interviews';
 
 export function CompanyDetailPage() {
   const { companyName } = useParams<{ companyName: string }>();
   const navigate = useNavigate();
   const decodedName = decodeURIComponent(companyName || '');
 
-  const { companies, updateQuestion, deleteQuestion, toggleFavorite, incrementPracticeCount, addQuestion } = useQuestions();
+  const { companies, questions: allQuestions, updateQuestion, deleteQuestion, toggleFavorite, incrementPracticeCount, addQuestion } = useQuestions();
+  const { addInterview, updateInterview: updateInterviewData, deleteInterview: deleteInterviewData } = useInterviews();
 
   const [activeTab, setActiveTab] = useState<Tab>('behavioral');
   const [behavioral, setBehavioral] = useState<Question[]>([]);
   const [technical, setTechnical] = useState<Question[]>([]);
+  const [companyInterviews, setCompanyInterviews] = useState<Interview[]>([]);
   const [notes, setNotes] = useState('');
   const [notesSaved, setNotesSaved] = useState(true);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [showInterviewForm, setShowInterviewForm] = useState(false);
+  const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
 
   const loadQuestions = useCallback(async () => {
     if (!decodedName) return;
     setLoading(true);
-    const [b, t, note] = await Promise.all([
+    const [b, t, note, interviews] = await Promise.all([
       getQuestionsByTypeAndCompany('behavioral', decodedName),
       getQuestionsByTypeAndCompany('technical', decodedName),
       getCompanyNote(decodedName),
+      getInterviewsByCompany(decodedName),
     ]);
     setBehavioral(b);
     setTechnical(t);
+    setCompanyInterviews(interviews);
     if (note) setNotes(note.content);
     setLoading(false);
   }, [decodedName]);
@@ -88,6 +99,7 @@ export function CompanyDetailPage() {
   const tabs: { id: Tab; label: string; icon: React.ReactNode; count?: number }[] = [
     { id: 'behavioral', label: 'Behavioral', icon: <BookOpen className="w-4 h-4" />, count: behavioral.length },
     { id: 'technical', label: 'Technical', icon: <Zap className="w-4 h-4" />, count: technical.length },
+    { id: 'interviews', label: 'Interviews', icon: <Calendar className="w-4 h-4" />, count: companyInterviews.length },
     { id: 'notes', label: 'Notes', icon: <StickyNote className="w-4 h-4" /> },
   ];
 
@@ -122,6 +134,8 @@ export function CompanyDetailPage() {
                   ? 'border-behavioral-600 text-behavioral-600'
                   : tab.id === 'technical'
                   ? 'border-technical-600 text-technical-600'
+                  : tab.id === 'interviews'
+                  ? 'border-interviews-600 text-interviews-600'
                   : 'border-bookmarks-600 text-bookmarks-600'
                 : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
@@ -141,6 +155,51 @@ export function CompanyDetailPage() {
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader className="w-6 h-6 animate-spin text-behavioral-600" />
+        </div>
+      ) : activeTab === 'interviews' ? (
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <button
+              onClick={() => {
+                setEditingInterview(null);
+                setShowInterviewForm(true);
+              }}
+              className="btn-interviews flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Schedule Interview</span>
+            </button>
+          </div>
+
+          {companyInterviews.length === 0 ? (
+            <div className="text-center py-12 text-gray-600 dark:text-gray-400">
+              <p className="text-lg">No interviews scheduled</p>
+              <p className="text-sm mt-2">Schedule your first interview with {decodedName}.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {companyInterviews
+                .sort((a, b) => a.dateTime - b.dateTime)
+                .map((interview) => (
+                  <InterviewCard
+                    key={interview.id}
+                    interview={interview}
+                    onEdit={(i) => {
+                      setEditingInterview(i);
+                      setShowInterviewForm(true);
+                    }}
+                    onDelete={async (id) => {
+                      await deleteInterviewData(id);
+                      await loadQuestions();
+                    }}
+                    onStatusChange={async (interview, status) => {
+                      await updateInterviewData({ ...interview, status, updatedAt: Date.now() });
+                      await loadQuestions();
+                    }}
+                  />
+                ))}
+            </div>
+          )}
         </div>
       ) : activeTab === 'notes' ? (
         <div className="space-y-4">
@@ -218,6 +277,29 @@ export function CompanyDetailPage() {
           onCancel={() => {
             setShowForm(false);
             setEditingQuestion(null);
+          }}
+        />
+      )}
+
+      {showInterviewForm && (
+        <InterviewForm
+          interview={editingInterview ?? undefined}
+          companies={companies}
+          questions={allQuestions}
+          defaultCompany={decodedName}
+          onSubmit={async (data) => {
+            if (editingInterview) {
+              await updateInterviewData({ ...editingInterview, ...data });
+            } else {
+              await addInterview(data);
+            }
+            setShowInterviewForm(false);
+            setEditingInterview(null);
+            await loadQuestions();
+          }}
+          onCancel={() => {
+            setShowInterviewForm(false);
+            setEditingInterview(null);
           }}
         />
       )}
