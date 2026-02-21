@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, Zap, Bookmark, BarChart3, Building2 } from 'lucide-react';
+import { BookOpen, Zap, Bookmark, BarChart3, Building2, Calendar } from 'lucide-react';
 
 interface NavigationItem {
   label: string;
@@ -26,6 +26,12 @@ const navigationItems: NavigationItem[] = [
     path: '/companies',
     icon: <Building2 className="w-5 h-5" />,
     color: 'behavioral',
+  },
+  {
+    label: 'Interviews',
+    path: '/interviews',
+    icon: <Calendar className="w-5 h-5" />,
+    color: 'interviews',
   },
   {
     label: 'Bookmarks',
@@ -63,6 +69,10 @@ export function Navigation() {
               bookmarks: {
                 active: 'text-bookmarks-600 border-bookmarks-600 bg-bookmarks-50 dark:bg-bookmarks-900/20',
                 inactive: 'text-gray-600 dark:text-gray-400 border-transparent hover:text-bookmarks-600',
+              },
+              interviews: {
+                active: 'text-interviews-600 border-interviews-600 bg-interviews-50 dark:bg-interviews-900/20',
+                inactive: 'text-gray-600 dark:text-gray-400 border-transparent hover:text-interviews-600',
               },
             };
 
