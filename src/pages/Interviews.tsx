@@ -6,6 +6,7 @@ import { useSearch } from '../hooks/useSearch';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { InterviewCard } from '../components/InterviewCard';
 import { InterviewForm } from '../components/InterviewForm';
+import { ICalImportModal } from '../components/ICalImportModal';
 import { MiniCalendar } from '../components/MiniCalendar';
 import { SearchBar } from '../components/SearchBar';
 import { EmptyState } from '../components/EmptyState';
@@ -37,7 +38,7 @@ function getDateLabel(dateKey: string): string {
 }
 
 export function InterviewsPage() {
-  const { interviews, loading, addInterview, updateInterview, deleteInterview } = useInterviews();
+  const { interviews, loading, loadInterviews, addInterview, updateInterview, deleteInterview } = useInterviews();
   const { questions, companies } = useQuestions();
   const [editingInterview, setEditingInterview] = useState<Interview | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -325,7 +326,13 @@ export function InterviewsPage() {
       )}
 
       {showICalModal && (
-        <div /> // ICalImportModal will replace this in Phase 5
+        <ICalImportModal
+          onClose={() => setShowICalModal(false)}
+          onImportDone={() => {
+            setShowICalModal(false);
+            loadInterviews();
+          }}
+        />
       )}
     </div>
   );
