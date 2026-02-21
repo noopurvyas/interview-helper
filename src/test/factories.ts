@@ -1,4 +1,4 @@
-import type { Question, Bookmark, AnswerVariation } from '../db/indexeddb';
+import type { Question, Bookmark, AnswerVariation, Interview } from '../db/indexeddb';
 
 let counter = 0;
 
@@ -46,6 +46,22 @@ export function makeBookmark(overrides: Partial<Bookmark> = {}): Bookmark {
     resourceType: 'docs',
     status: 'unread',
     createdAt: Date.now(),
+    ...overrides,
+  };
+}
+
+export function makeInterview(overrides: Partial<Interview> = {}): Interview {
+  const now = Date.now();
+  return {
+    id: `int-${++counter}`,
+    company: 'Google',
+    dateTime: now + 7 * 24 * 60 * 60 * 1000, // 1 week from now
+    duration: 60,
+    interviewType: 'video',
+    status: 'scheduled',
+    linkedQuestionIds: [],
+    createdAt: now,
+    updatedAt: now,
     ...overrides,
   };
 }

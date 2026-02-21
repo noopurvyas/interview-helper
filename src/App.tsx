@@ -6,6 +6,7 @@ import { BookmarksPage } from './pages/Bookmarks';
 import { DashboardPage } from './pages/Dashboard';
 import { CompanyHubPage } from './pages/CompanyHub';
 import { CompanyDetailPage } from './pages/CompanyDetail';
+import { InterviewsPage } from './pages/Interviews';
 import { Header } from './components/Header';
 import { InstallBanner } from './components/InstallBanner';
 import { Navigation } from './components/Navigation';
@@ -30,6 +31,7 @@ function AppContent() {
           <Route path="/technical" element={<TechnicalQuestionsPage />} />
           <Route path="/companies" element={<CompanyHubPage />} />
           <Route path="/companies/:companyName" element={<CompanyDetailPage />} />
+          <Route path="/interviews" element={<InterviewsPage />} />
           <Route path="/bookmarks" element={<BookmarksPage />} />
         </Routes>
       </main>

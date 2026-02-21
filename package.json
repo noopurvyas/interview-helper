@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "autoprefixer": "^10.4.24",
+    "ical.js": "^2.2.1",
     "idb": "^8.0.3",
     "jspdf": "^4.1.0",
     "lucide-react": "^0.574.0",

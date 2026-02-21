@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useQuestions } from '../hooks/useQuestions';
 import { useBookmarks } from '../hooks/useBookmarks';
@@ -13,8 +13,12 @@ import {
   AlertTriangle,
   Star,
   BookMarked,
+  Calendar,
+  Clock,
+  ArrowRight,
 } from 'lucide-react';
-import type { Question } from '../db/indexeddb';
+import type { Question, Interview } from '../db/indexeddb';
+import { getUpcomingInterviews } from '../db/indexeddb';
 
 export function dayKey(ts: number): string {
   const d = new Date(ts);
@@ -161,6 +165,12 @@ export function DashboardPage() {
   const { bookmarks } = useBookmarks();
   const navigate = useNavigate();
   const [practiceQuestion, setPracticeQuestion] = useState<Question | null>(null);
+  const [upcomingInterviews, setUpcomingInterviews] = useState<Interview[]>([]);
+  const [renderTime] = useState(() => Date.now());
+
+  useEffect(() => {
+    getUpcomingInterviews().then((data) => setUpcomingInterviews(data.slice(0, 3)));
+  }, []);
 
   const totalQuestions = questions.length;
   const behavioralQuestions = questions.filter((q) => q.type === 'behavioral').length;
@@ -220,12 +230,69 @@ export function DashboardPage() {
         </button>
       </div>
 
+      {/* Upcoming Interviews Banner */}
+      {upcomingInterviews.length > 0 && (
+        <button
+          onClick={() => navigate('/interviews')}
+          className="w-full card border-l-4 border-l-interviews-500 bg-gradient-to-r from-interviews-50 to-white dark:from-interviews-900/20 dark:to-gray-800 text-left hover:shadow-lg transition-shadow"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-interviews-600 dark:text-interviews-400" />
+              <h3 className="font-semibold text-gray-900 dark:text-white">Upcoming Interviews</h3>
+            </div>
+            <ArrowRight className="w-4 h-4 text-gray-400" />
+          </div>
+          <div className="space-y-2">
+            {upcomingInterviews.map((interview) => {
+              const isUrgent = interview.dateTime - renderTime < 24 * 60 * 60 * 1000;
+              return (
+                <div
+                  key={interview.id}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg ${
+                    isUrgent
+                      ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700'
+                      : 'bg-white dark:bg-gray-700/50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium text-gray-900 dark:text-white">
+                      {interview.company}
+                    </span>
+                    <span className="text-xs badge badge-interviews">
+                      {interview.interviewType}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>
+                      {new Intl.DateTimeFormat('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      }).format(new Date(interview.dateTime))}
+                    </span>
+                    {isUrgent && (
+                      <span className="ml-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                        Soon!
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </button>
+      )}
+
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard icon={Flame} label="Day Streak" value={streak} color="bg-amber-500" />
         <StatCard icon={BookOpen} label="Questions" value={totalQuestions} color="bg-behavioral-600" />
         <StatCard icon={TrendingUp} label="Practiced" value={totalPracticeCount} color="bg-technical-600" />
         <StatCard icon={Bookmark} label="Bookmarks" value={totalBookmarks} color="bg-bookmarks-600" />
+        <StatCard icon={Calendar} label="Interviews" value={upcomingInterviews.length} color="bg-interviews-600" />
         <StatCard icon={BarChart3} label="Companies" value={companies.length} color="bg-behavioral-600" />
       </div>
 

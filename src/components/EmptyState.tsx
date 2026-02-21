@@ -1,7 +1,7 @@
 interface EmptyStateProps {
   title: string;
   description: string;
-  icon: 'questions' | 'bookmarks' | 'search';
+  icon: 'questions' | 'bookmarks' | 'search' | 'calendar';
 }
 
 function QuestionsIcon() {
@@ -40,10 +40,27 @@ function SearchIcon() {
   );
 }
 
+function CalendarIcon() {
+  return (
+    <svg width="120" height="120" viewBox="0 0 120 120" fill="none" className="mx-auto mb-4">
+      <rect x="20" y="30" width="80" height="70" rx="8" className="fill-gray-200 dark:fill-gray-700" />
+      <rect x="20" y="30" width="80" height="20" rx="8" className="fill-interviews-200 dark:fill-interviews-800" />
+      <rect x="35" y="22" width="4" height="16" rx="2" className="fill-gray-400 dark:fill-gray-500" />
+      <rect x="81" y="22" width="4" height="16" rx="2" className="fill-gray-400 dark:fill-gray-500" />
+      <rect x="32" y="60" width="12" height="12" rx="2" className="fill-gray-300 dark:fill-gray-600" />
+      <rect x="54" y="60" width="12" height="12" rx="2" className="fill-interviews-400 dark:fill-interviews-600" />
+      <rect x="76" y="60" width="12" height="12" rx="2" className="fill-gray-300 dark:fill-gray-600" />
+      <rect x="32" y="80" width="12" height="12" rx="2" className="fill-gray-300 dark:fill-gray-600" />
+      <rect x="54" y="80" width="12" height="12" rx="2" className="fill-gray-300 dark:fill-gray-600" />
+    </svg>
+  );
+}
+
 const icons = {
   questions: QuestionsIcon,
   bookmarks: BookmarksIcon,
   search: SearchIcon,
+  calendar: CalendarIcon,
 };
 
 export function EmptyState({ title, description, icon }: EmptyStateProps) {
