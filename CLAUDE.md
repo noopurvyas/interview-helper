@@ -10,6 +10,16 @@ Interview preparation PWA — React 19 + TypeScript + Vite + Tailwind CSS v4. Of
 - `npm test` — run all tests once (vitest)
 - `npm run test:watch` — tests in watch mode
 
+## IMPORTANT INSTRUCTIONS
+
+1. Always deeply inspect the project before planning a new feature.
+2. Always ask plenty of clarifying questions.
+3. Always ensure the application works and the tests pass. Use Playwright MCP to verify that the application is working and to do visual comparisons.
+4. IMPORTANT: Do not compromise to make tests pass. Do not make large design changes if you cannot make tests pass. Work harder to make the tests pass.
+5. Always work in a new branch and commit frequently.
+6. Always create a pull request when done.
+7. IMPORTANT: When bumping `DB_VERSION` in `src/db/indexeddb.ts`, always write a proper **version-based migration** using the `oldVersion` parameter in the `upgrade(db, oldVersion)` callback. Use `if (oldVersion < N)` guards so each version's migration runs sequentially. Never drop or recreate existing stores — existing user data MUST be preserved across upgrades. Test the upgrade path by verifying data created in previous versions is still accessible after the version bump.
+
 ## Project Structure
 
 ```
@@ -27,20 +37,20 @@ src/
 
 - **State**: React hooks only (useState, useCallback, useContext) — no Redux/Zustand
 - **Global context**: ToastContext only (ToastProvider/useToast)
-- **Data hooks**: useQuestions, useBookmarks wrap IndexedDB with loading/error state
-- **Database**: IndexedDB (`interview-helper`, version 2). Stores: questions, bookmarks, companyNotes
+- **Data hooks**: useQuestions, useBookmarks, useInterviews wrap IndexedDB with loading/error state
+- **Database**: IndexedDB (`interview-helper`, version 3). Stores: questions, bookmarks, companyNotes, interviews
 - **Search**: Client-side only via useSearch hook
 - **Icons**: lucide-react
 - **PDF export**: jspdf
 
 ## Routing
 
-React Router v7 (BrowserRouter): `/dashboard`, `/behavioral`, `/technical`, `/bookmarks`, `/companies`, `/companies/:companyName`
+React Router v7 (BrowserRouter): `/dashboard`, `/behavioral`, `/technical`, `/bookmarks`, `/interviews`, `/companies`, `/companies/:companyName`
 
 ## Styling
 
 - Tailwind CSS v4 via `@tailwindcss/postcss`
-- Custom color families in `index.css`: `behavioral-*` (blue), `technical-*` (red), `bookmarks-*` (teal)
+- Custom color families in `index.css`: `behavioral-*` (blue), `technical-*` (red), `bookmarks-*` (teal), `interviews-*` (purple)
 - Utility classes in `index.css`: `btn-primary`, `btn-behavioral`, `card`, `badge`, `input-field`
 - Dark mode via `.dark` class on `<html>`, toggled in Header.tsx
 
@@ -49,6 +59,7 @@ React Router v7 (BrowserRouter): `/dashboard`, `/behavioral`, `/technical`, `/bo
 - **Question** — behavioral or technical, with optional STAR fields, code snippets, difficulty, tags. Required fields: `id`, `type`, `question`
 - **Bookmark** — learning resources with auto-detected type, status tracking
 - **CompanyNote** — free-form notes keyed by company name
+- **Interview** — scheduled interviews with company (required), dateTime, type, status, optional role/round/location/contacts/notes/linkedQuestionIds/icalUid
 
 All types defined in `src/db/indexeddb.ts`.
 
@@ -56,7 +67,7 @@ All types defined in `src/db/indexeddb.ts`.
 
 - **Stack**: Vitest + React Testing Library + jsdom
 - **Location**: colocated — `Component.test.tsx` next to `Component.tsx`
-- **Factories**: `src/test/factories.ts` (makeQuestion, makeTechnicalQuestion, makeBookmark)
+- **Factories**: `src/test/factories.ts` (makeQuestion, makeTechnicalQuestion, makeBookmark, makeInterview)
 - **IndexedDB mock**: `fake-indexeddb/auto` imported in `src/test/setup.ts`
 - **Page tests**: mock hooks at module level with `vi.mock()`
 - **Hook tests**: use `renderHook()` from Testing Library

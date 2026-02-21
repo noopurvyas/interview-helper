@@ -172,9 +172,9 @@ async function initDB(): Promise<IDBPDatabase> {
   if (db) return db;
 
   db = await openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      // Create questions store
-      if (!db.objectStoreNames.contains(QUESTIONS_STORE)) {
+    upgrade(db, oldVersion) {
+      // v1: questions + bookmarks stores
+      if (oldVersion < 1) {
         const questionsStore = db.createObjectStore(QUESTIONS_STORE, {
           keyPath: 'id',
         });
@@ -183,10 +183,7 @@ async function initDB(): Promise<IDBPDatabase> {
         questionsStore.createIndex('isFavorite', 'isFavorite');
         questionsStore.createIndex('createdAt', 'createdAt');
         questionsStore.createIndex('type-company', ['type', 'company']);
-      }
 
-      // Create bookmarks store
-      if (!db.objectStoreNames.contains(BOOKMARKS_STORE)) {
         const bookmarksStore = db.createObjectStore(BOOKMARKS_STORE, {
           keyPath: 'id',
         });
@@ -195,13 +192,13 @@ async function initDB(): Promise<IDBPDatabase> {
         bookmarksStore.createIndex('createdAt', 'createdAt');
       }
 
-      // Create company notes store (v2)
-      if (!db.objectStoreNames.contains(NOTES_STORE)) {
+      // v2: company notes store
+      if (oldVersion < 2) {
         db.createObjectStore(NOTES_STORE, { keyPath: 'company' });
       }
 
-      // Create interviews store (v3)
-      if (!db.objectStoreNames.contains(INTERVIEWS_STORE)) {
+      // v3: interviews store
+      if (oldVersion < 3) {
         const interviewsStore = db.createObjectStore(INTERVIEWS_STORE, {
           keyPath: 'id',
         });
