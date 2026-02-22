@@ -31,49 +31,60 @@ const deleteInterview = db.prepare('DELETE FROM interviews WHERE id = ?');
 
 // Pull all data from server
 syncRouter.post('/pull', (_req, res) => {
-  const questions = (getAllQuestions.all() as Record<string, unknown>[]).map(deserializeQuestion);
-  const bookmarks = getAllBookmarks.all();
-  const interviews = (getAllInterviews.all() as Record<string, unknown>[]).map(deserializeInterview);
-  const notes = getAllNotes.all();
-  res.json({ questions, bookmarks, interviews, notes });
+  try {
+    const questions = (getAllQuestions.all() as Record<string, unknown>[]).map(deserializeQuestion);
+    const bookmarks = getAllBookmarks.all();
+    const interviews = (getAllInterviews.all() as Record<string, unknown>[]).map(deserializeInterview);
+    const notes = getAllNotes.all();
+    res.json({ questions, bookmarks, interviews, notes });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to pull data' });
+  }
 });
 
 // Push bulk data to server
 syncRouter.post('/push', (req, res) => {
-  const { questions, bookmarks, interviews, notes, deletions } = req.body;
+  const { questions, bookmarks, interviews, notes, deletions } = req.body ?? {};
 
-  const pushMany = db.transaction(() => {
-    if (questions) {
-      for (const q of questions) {
-        upsertQuestion.run(serializeQuestion(q));
-      }
-    }
-    if (bookmarks) {
-      for (const b of bookmarks) {
-        upsertBookmark.run(serializeBookmark(b));
-      }
-    }
-    if (interviews) {
-      for (const i of interviews) {
-        upsertInterview.run(serializeInterview(i));
-      }
-    }
-    if (notes) {
-      for (const n of notes) {
-        upsertNote.run(n);
-      }
-    }
-    if (deletions) {
-      for (const d of deletions) {
-        switch (d.store) {
-          case 'questions': deleteQuestion.run(d.id); break;
-          case 'bookmarks': deleteBookmark.run(d.id); break;
-          case 'interviews': deleteInterview.run(d.id); break;
+  try {
+    const pushMany = db.transaction(() => {
+      if (Array.isArray(questions)) {
+        for (const q of questions) {
+          if (q?.id) upsertQuestion.run(serializeQuestion(q));
         }
       }
-    }
-  });
+      if (Array.isArray(bookmarks)) {
+        for (const b of bookmarks) {
+          if (b?.id) upsertBookmark.run(serializeBookmark(b));
+        }
+      }
+      if (Array.isArray(interviews)) {
+        for (const i of interviews) {
+          if (i?.id) upsertInterview.run(serializeInterview(i));
+        }
+      }
+      if (Array.isArray(notes)) {
+        for (const n of notes) {
+          if (n?.company && n?.content != null && n?.updatedAt != null) {
+            upsertNote.run({ company: n.company, content: n.content, updatedAt: n.updatedAt });
+          }
+        }
+      }
+      if (Array.isArray(deletions)) {
+        for (const d of deletions) {
+          if (!d?.id) continue;
+          switch (d.store) {
+            case 'questions': deleteQuestion.run(d.id); break;
+            case 'bookmarks': deleteBookmark.run(d.id); break;
+            case 'interviews': deleteInterview.run(d.id); break;
+          }
+        }
+      }
+    });
 
-  pushMany();
-  res.json({ success: true });
+    pushMany();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to push data' });
+  }
 });

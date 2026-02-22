@@ -394,6 +394,11 @@ export async function getCompanyNote(company: string): Promise<CompanyNote | und
   return database.get(NOTES_STORE, company);
 }
 
+export async function getAllCompanyNotes(): Promise<CompanyNote[]> {
+  const database = await initDB();
+  return database.getAll(NOTES_STORE);
+}
+
 export async function saveCompanyNote(company: string, content: string): Promise<void> {
   const database = await initDB();
   const note: CompanyNote = { company, content, updatedAt: Date.now() };
@@ -533,6 +538,7 @@ export interface SyncQueueItem {
   op: string;
   store: string;
   data?: unknown;
+  entityId?: string;
   timestamp: number;
 }
 

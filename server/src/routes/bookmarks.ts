@@ -16,13 +16,26 @@ bookmarksRouter.get('/', (_req, res) => {
 });
 
 bookmarksRouter.post('/', (req, res) => {
-  upsert.run(serializeBookmark(req.body));
-  res.status(201).json({ id: req.body.id });
+  const { id, title, url, resourceType, createdAt } = req.body ?? {};
+  if (!id || !title || !url || !resourceType || createdAt == null) {
+    res.status(400).json({ error: 'Missing required fields: id, title, url, resourceType, createdAt' });
+    return;
+  }
+  try {
+    upsert.run(serializeBookmark(req.body));
+    res.status(201).json({ id });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save bookmark' });
+  }
 });
 
 bookmarksRouter.put('/:id', (req, res) => {
-  upsert.run(serializeBookmark({ ...req.body, id: req.params.id }));
-  res.json({ id: req.params.id });
+  try {
+    upsert.run(serializeBookmark({ ...req.body, id: req.params.id }));
+    res.json({ id: req.params.id });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update bookmark' });
+  }
 });
 
 bookmarksRouter.delete('/:id', (req, res) => {

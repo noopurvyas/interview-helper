@@ -1,11 +1,10 @@
-import { setMutationCallback } from './indexeddb';
+import { setMutationCallback, addToSyncQueue } from './indexeddb';
 import { initSync, handleMutation } from './sync';
 
 let setupDone = false;
 
 export function setupSync(): void {
   if (setupDone) return;
-  setupDone = false;
 
   // Skip sync in test environment
   if (import.meta.env.MODE === 'test') return;
@@ -15,7 +14,8 @@ export function setupSync(): void {
   // Wire up mutation callback: fire-and-forget sync on every IndexedDB write
   setMutationCallback((op, store, data, id) => {
     handleMutation(op, store, data, id).catch(() => {
-      // Errors are handled inside handleMutation (queued for retry)
+      // Sync failed — queue for offline retry
+      addToSyncQueue({ op, store, data, entityId: id, timestamp: Date.now() }).catch(() => {});
     });
   });
 
