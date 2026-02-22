@@ -1,14 +1,9 @@
 import { Router } from 'express';
-import db, { serializeInterview, deserializeInterview } from '../db.ts';
+import { statements, serializeInterview, deserializeInterview } from '../db.ts';
 
 export const interviewsRouter = Router();
 
-const getAll = db.prepare('SELECT * FROM interviews');
-const upsert = db.prepare(`
-  INSERT OR REPLACE INTO interviews (id, company, dateTime, duration, role, interviewType, round, status, notes, linkedQuestionIds, location, contactName, contactEmail, icalUid, createdAt, updatedAt)
-  VALUES (@id, @company, @dateTime, @duration, @role, @interviewType, @round, @status, @notes, @linkedQuestionIds, @location, @contactName, @contactEmail, @icalUid, @createdAt, @updatedAt)
-`);
-const deleteById = db.prepare('DELETE FROM interviews WHERE id = ?');
+const { getAll, upsert, deleteById } = statements.interviews;
 
 interviewsRouter.get('/', (_req, res) => {
   const rows = getAll.all() as Record<string, unknown>[];

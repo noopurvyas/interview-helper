@@ -19,7 +19,7 @@ function AppContent() {
   const { companies, loadQuestions } = useQuestions();
   const [showImportExport, setShowImportExport] = useState(false);
 
-  useEffect(() => { setupSync(); }, []);
+  useEffect(() => { setupSync(loadQuestions); }, [loadQuestions]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
