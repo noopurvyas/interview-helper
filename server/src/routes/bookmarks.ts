@@ -1,14 +1,9 @@
 import { Router } from 'express';
-import db, { serializeBookmark } from '../db.ts';
+import { statements, serializeBookmark } from '../db.ts';
 
 export const bookmarksRouter = Router();
 
-const getAll = db.prepare('SELECT * FROM bookmarks');
-const upsert = db.prepare(`
-  INSERT OR REPLACE INTO bookmarks (id, title, url, resourceType, category, collection, notes, status, createdAt)
-  VALUES (@id, @title, @url, @resourceType, @category, @collection, @notes, @status, @createdAt)
-`);
-const deleteById = db.prepare('DELETE FROM bookmarks WHERE id = ?');
+const { getAll, upsert, deleteById } = statements.bookmarks;
 
 bookmarksRouter.get('/', (_req, res) => {
   const rows = getAll.all();

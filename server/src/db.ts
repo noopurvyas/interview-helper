@@ -1,10 +1,8 @@
 import Database from 'better-sqlite3';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import fs from 'fs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, '..', 'data');
+const DATA_DIR = process.env.DATA_DIR || path.join(process.cwd(), 'data');
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -142,5 +140,42 @@ export function deserializeInterview(row: Record<string, unknown>): Record<strin
     linkedQuestionIds: JSON.parse(row.linkedQuestionIds as string || '[]'),
   };
 }
+
+// --- Shared prepared statements ---
+
+export const statements = {
+  questions: {
+    getAll: db.prepare('SELECT * FROM questions'),
+    upsert: db.prepare(`
+      INSERT OR REPLACE INTO questions (id, type, company, question, answerVariations, isFavorite, practiceCount, lastPracticed, createdAt, subtype, difficulty, tags, codeSnippet)
+      VALUES (@id, @type, @company, @question, @answerVariations, @isFavorite, @practiceCount, @lastPracticed, @createdAt, @subtype, @difficulty, @tags, @codeSnippet)
+    `),
+    deleteById: db.prepare('DELETE FROM questions WHERE id = ?'),
+  },
+  bookmarks: {
+    getAll: db.prepare('SELECT * FROM bookmarks'),
+    upsert: db.prepare(`
+      INSERT OR REPLACE INTO bookmarks (id, title, url, resourceType, category, collection, notes, status, createdAt)
+      VALUES (@id, @title, @url, @resourceType, @category, @collection, @notes, @status, @createdAt)
+    `),
+    deleteById: db.prepare('DELETE FROM bookmarks WHERE id = ?'),
+  },
+  interviews: {
+    getAll: db.prepare('SELECT * FROM interviews'),
+    upsert: db.prepare(`
+      INSERT OR REPLACE INTO interviews (id, company, dateTime, duration, role, interviewType, round, status, notes, linkedQuestionIds, location, contactName, contactEmail, icalUid, createdAt, updatedAt)
+      VALUES (@id, @company, @dateTime, @duration, @role, @interviewType, @round, @status, @notes, @linkedQuestionIds, @location, @contactName, @contactEmail, @icalUid, @createdAt, @updatedAt)
+    `),
+    deleteById: db.prepare('DELETE FROM interviews WHERE id = ?'),
+  },
+  notes: {
+    getByCompany: db.prepare('SELECT * FROM companyNotes WHERE company = ?'),
+    getAll: db.prepare('SELECT * FROM companyNotes'),
+    upsert: db.prepare(`
+      INSERT OR REPLACE INTO companyNotes (company, content, updatedAt)
+      VALUES (@company, @content, @updatedAt)
+    `),
+  },
+};
 
 export default db;

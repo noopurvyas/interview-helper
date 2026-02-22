@@ -1,13 +1,9 @@
 import { Router } from 'express';
-import db from '../db.ts';
+import { statements } from '../db.ts';
 
 export const notesRouter = Router();
 
-const getByCompany = db.prepare('SELECT * FROM companyNotes WHERE company = ?');
-const upsert = db.prepare(`
-  INSERT OR REPLACE INTO companyNotes (company, content, updatedAt)
-  VALUES (@company, @content, @updatedAt)
-`);
+const { getByCompany, upsert } = statements.notes;
 
 notesRouter.get('/:company', (req, res) => {
   const row = getByCompany.get(req.params.company);

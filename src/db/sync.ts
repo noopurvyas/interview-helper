@@ -13,6 +13,10 @@ import {
   apiUpsertNote,
 } from './api';
 import type { Question, Bookmark, Interview, CompanyNote } from './indexeddb';
+
+type HydrationCallback = () => void;
+let onHydrationComplete: HydrationCallback | null = null;
+export function setHydrationCallback(cb: HydrationCallback) { onHydrationComplete = cb; }
 import {
   getAllQuestions,
   getAllBookmarks,
@@ -53,34 +57,43 @@ export async function initSync(): Promise<void> {
   const localInterviewIds = new Set(localInterviews.map((i) => i.id));
   const localNotesByCompany = new Map(localNotes.map((n) => [n.company, n]));
 
-  const serverQuestionIds = new Set((serverData.questions as Question[]).map((q) => q.id));
-  const serverBookmarkIds = new Set((serverData.bookmarks as Bookmark[]).map((b) => b.id));
-  const serverInterviewIds = new Set((serverData.interviews as Interview[]).map((i) => i.id));
+  const serverQuestionIds = new Set(serverData.questions.map((q) => q.id));
+  const serverBookmarkIds = new Set(serverData.bookmarks.map((b) => b.id));
+  const serverInterviewIds = new Set(serverData.interviews.map((i) => i.id));
   const serverNotesByCompany = new Map(
-    (serverData.notes as CompanyNote[]).map((n) => [n.company, n])
+    serverData.notes.map((n) => [n.company, n])
   );
 
   // Restore data from server that's missing locally (IndexedDB was wiped)
-  for (const q of serverData.questions as Question[]) {
+  let hydrated = false;
+  for (const q of serverData.questions) {
     if (!localQuestionIds.has(q.id)) {
       await putQuestionDirect(q);
+      hydrated = true;
     }
   }
-  for (const b of serverData.bookmarks as Bookmark[]) {
+  for (const b of serverData.bookmarks) {
     if (!localBookmarkIds.has(b.id)) {
       await putBookmarkDirect(b);
+      hydrated = true;
     }
   }
-  for (const i of serverData.interviews as Interview[]) {
+  for (const i of serverData.interviews) {
     if (!localInterviewIds.has(i.id)) {
       await putInterviewDirect(i);
+      hydrated = true;
     }
   }
-  // Bug #4 fix: only restore notes missing locally, don't overwrite local edits
-  for (const n of serverData.notes as CompanyNote[]) {
+  for (const n of serverData.notes) {
     if (!localNotesByCompany.has(n.company)) {
       await putCompanyNoteDirect(n);
+      hydrated = true;
     }
+  }
+
+  // Notify UI to refresh if data was restored from server
+  if (hydrated) {
+    onHydrationComplete?.();
   }
 
   // Push local data not on server (new offline data)
@@ -108,34 +121,45 @@ export async function handleMutation(
   data?: unknown,
   entityId?: string
 ): Promise<void> {
-  let result: unknown = null;
+  let apiCall: Promise<unknown> | null = null;
 
   switch (store) {
-    case 'questions':
-      if (op === 'create') result = await apiUpsertQuestion(data);
-      else if (op === 'update') result = await apiUpdateQuestion((data as Question).id, data);
-      else if (op === 'delete' && entityId) result = await apiDeleteQuestion(entityId);
+    case 'questions': {
+      const q = data as Question;
+      if (op === 'create') apiCall = apiUpsertQuestion(q);
+      else if (op === 'update') apiCall = apiUpdateQuestion(q.id, q);
+      else if (op === 'delete' && entityId) apiCall = apiDeleteQuestion(entityId);
       break;
-    case 'bookmarks':
-      if (op === 'create') result = await apiUpsertBookmark(data);
-      else if (op === 'update') result = await apiUpdateBookmark((data as Bookmark).id, data);
-      else if (op === 'delete' && entityId) result = await apiDeleteBookmark(entityId);
+    }
+    case 'bookmarks': {
+      const b = data as Bookmark;
+      if (op === 'create') apiCall = apiUpsertBookmark(b);
+      else if (op === 'update') apiCall = apiUpdateBookmark(b.id, b);
+      else if (op === 'delete' && entityId) apiCall = apiDeleteBookmark(entityId);
       break;
-    case 'interviews':
-      if (op === 'create') result = await apiUpsertInterview(data);
-      else if (op === 'update') result = await apiUpdateInterview((data as Interview).id, data);
-      else if (op === 'delete' && entityId) result = await apiDeleteInterview(entityId);
+    }
+    case 'interviews': {
+      const i = data as Interview;
+      if (op === 'create') apiCall = apiUpsertInterview(i);
+      else if (op === 'update') apiCall = apiUpdateInterview(i.id, i);
+      else if (op === 'delete' && entityId) apiCall = apiDeleteInterview(entityId);
       break;
-    case 'companyNotes':
+    }
+    case 'companyNotes': {
       if (data && (op === 'create' || op === 'update')) {
         const note = data as CompanyNote;
-        result = await apiUpsertNote(note.company, data);
+        apiCall = apiUpsertNote(note.company, note);
       }
       break;
+    }
   }
 
+  // No matching handler — silently discard (don't queue for retry)
+  if (apiCall === null) return;
+
+  const result = await apiCall;
   if (result === null) {
-    // Failed — queue for retry (only when called from live mutation, not from flush)
+    // Network failure — queue for retry
     return Promise.reject(new Error('sync failed'));
   }
 }
