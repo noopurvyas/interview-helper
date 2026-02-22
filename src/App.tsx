@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { BehavioralQuestionsPage } from './pages/BehavioralQuestions';
 import { TechnicalQuestionsPage } from './pages/TechnicalQuestions';
@@ -13,10 +13,13 @@ import { Navigation } from './components/Navigation';
 import { ToastProvider } from './components/Toast';
 import { ImportExportModal } from './components/ImportExportModal';
 import { useQuestions } from './hooks/useQuestions';
+import { setupSync } from './db/syncBridge';
 
 function AppContent() {
   const { companies, loadQuestions } = useQuestions();
   const [showImportExport, setShowImportExport] = useState(false);
+
+  useEffect(() => { setupSync(); }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">

@@ -162,11 +162,17 @@ export interface CompanyNote {
 let db: IDBPDatabase | null = null;
 
 const DB_NAME = 'interview-helper';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const QUESTIONS_STORE = 'questions';
 const BOOKMARKS_STORE = 'bookmarks';
 const NOTES_STORE = 'companyNotes';
 const INTERVIEWS_STORE = 'interviews';
+const SYNC_QUEUE_STORE = 'syncQueue';
+
+// Mutation callback for sync layer
+type MutationCallback = (op: 'create' | 'update' | 'delete', store: string, data?: unknown, id?: string) => void;
+let mutationCb: MutationCallback | null = null;
+export function setMutationCallback(cb: MutationCallback) { mutationCb = cb; }
 
 async function initDB(): Promise<IDBPDatabase> {
   if (db) return db;
@@ -208,6 +214,14 @@ async function initDB(): Promise<IDBPDatabase> {
         interviewsStore.createIndex('icalUid', 'icalUid');
         interviewsStore.createIndex('createdAt', 'createdAt');
       }
+
+      // v4: sync queue store for offline mutation persistence
+      if (oldVersion < 4) {
+        db.createObjectStore(SYNC_QUEUE_STORE, {
+          keyPath: 'id',
+          autoIncrement: true,
+        });
+      }
     },
   });
 
@@ -223,6 +237,7 @@ export async function addQuestion(question: Omit<Question, 'id'>): Promise<strin
     id,
   };
   await database.add(QUESTIONS_STORE, newQuestion);
+  mutationCb?.('create', 'questions', newQuestion);
   return id;
 }
 
@@ -234,11 +249,13 @@ export async function getQuestion(id: string): Promise<Question | undefined> {
 export async function updateQuestion(question: Question): Promise<void> {
   const database = await initDB();
   await database.put(QUESTIONS_STORE, question);
+  mutationCb?.('update', 'questions', question);
 }
 
 export async function deleteQuestion(id: string): Promise<void> {
   const database = await initDB();
   await database.delete(QUESTIONS_STORE, id);
+  mutationCb?.('delete', 'questions', undefined, id);
 }
 
 export async function getQuestionsByType(type: 'behavioral' | 'technical'): Promise<Question[]> {
@@ -308,6 +325,7 @@ export async function addBookmark(
     id,
   };
   await database.add(BOOKMARKS_STORE, newBookmark);
+  mutationCb?.('create', 'bookmarks', newBookmark);
   return id;
 }
 
@@ -319,11 +337,13 @@ export async function getBookmark(id: string): Promise<Bookmark | undefined> {
 export async function updateBookmark(bookmark: Bookmark): Promise<void> {
   const database = await initDB();
   await database.put(BOOKMARKS_STORE, bookmark);
+  mutationCb?.('update', 'bookmarks', bookmark);
 }
 
 export async function deleteBookmark(id: string): Promise<void> {
   const database = await initDB();
   await database.delete(BOOKMARKS_STORE, id);
+  mutationCb?.('delete', 'bookmarks', undefined, id);
 }
 
 export async function getBookmarksByType(
@@ -378,6 +398,7 @@ export async function saveCompanyNote(company: string, content: string): Promise
   const database = await initDB();
   const note: CompanyNote = { company, content, updatedAt: Date.now() };
   await database.put(NOTES_STORE, note);
+  mutationCb?.('update', 'companyNotes', note);
 }
 
 // Company stats helper
@@ -420,6 +441,7 @@ export async function addInterview(interview: Omit<Interview, 'id'>): Promise<st
   const id = crypto.randomUUID();
   const newInterview: Interview = { ...interview, id };
   await database.add(INTERVIEWS_STORE, newInterview);
+  mutationCb?.('create', 'interviews', newInterview);
   return id;
 }
 
@@ -431,11 +453,13 @@ export async function getInterview(id: string): Promise<Interview | undefined> {
 export async function updateInterview(interview: Interview): Promise<void> {
   const database = await initDB();
   await database.put(INTERVIEWS_STORE, interview);
+  mutationCb?.('update', 'interviews', interview);
 }
 
 export async function deleteInterview(id: string): Promise<void> {
   const database = await initDB();
   await database.delete(INTERVIEWS_STORE, id);
+  mutationCb?.('delete', 'interviews', undefined, id);
 }
 
 export async function getAllInterviews(): Promise<Interview[]> {
@@ -480,4 +504,49 @@ export async function searchInterviews(query: string): Promise<Interview[]> {
       (i.contactName?.toLowerCase().includes(lowerQuery) ?? false) ||
       (i.location?.toLowerCase().includes(lowerQuery) ?? false)
   );
+}
+
+// Direct-put functions for sync hydration (put with existing id, no mutation callback)
+export async function putQuestionDirect(question: Question): Promise<void> {
+  const database = await initDB();
+  await database.put(QUESTIONS_STORE, question);
+}
+
+export async function putBookmarkDirect(bookmark: Bookmark): Promise<void> {
+  const database = await initDB();
+  await database.put(BOOKMARKS_STORE, bookmark);
+}
+
+export async function putInterviewDirect(interview: Interview): Promise<void> {
+  const database = await initDB();
+  await database.put(INTERVIEWS_STORE, interview);
+}
+
+export async function putCompanyNoteDirect(note: CompanyNote): Promise<void> {
+  const database = await initDB();
+  await database.put(NOTES_STORE, note);
+}
+
+// Sync queue operations
+export interface SyncQueueItem {
+  id?: number;
+  op: string;
+  store: string;
+  data?: unknown;
+  timestamp: number;
+}
+
+export async function addToSyncQueue(item: Omit<SyncQueueItem, 'id'>): Promise<void> {
+  const database = await initDB();
+  await database.add(SYNC_QUEUE_STORE, item);
+}
+
+export async function getSyncQueue(): Promise<SyncQueueItem[]> {
+  const database = await initDB();
+  return database.getAll(SYNC_QUEUE_STORE);
+}
+
+export async function clearSyncQueue(): Promise<void> {
+  const database = await initDB();
+  await database.clear(SYNC_QUEUE_STORE);
 }
