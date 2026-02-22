@@ -7,12 +7,10 @@
     "noEmit": true,
     "esModuleInterop": true,
     "strict": true,
-    "outDir": "dist",
     "rootDir": "src",
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "declaration": true
+    "resolveJsonModule": true
   },
   "include": ["src"]
 }

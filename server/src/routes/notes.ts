@@ -19,7 +19,16 @@ notesRouter.get('/:company', (req, res) => {
 });
 
 notesRouter.put('/:company', (req, res) => {
-  const data = { company: req.params.company, ...req.body };
-  upsert.run(data);
-  res.json(data);
+  const { content, updatedAt } = req.body ?? {};
+  if (content == null || updatedAt == null) {
+    res.status(400).json({ error: 'Missing required fields: content, updatedAt' });
+    return;
+  }
+  const data = { company: req.params.company, content, updatedAt };
+  try {
+    upsert.run(data);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save note' });
+  }
 });
