@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X, Plus, Code } from 'lucide-react';
 import { Modal } from './Modal';
 import type { Question, AnswerVariation, TechnicalSubtype, Difficulty } from '../db/indexeddb';
+import { DEFAULT_COMPANIES } from '../db/indexeddb';
 
 interface QuestionFormProps {
   question?: Question;
@@ -32,7 +33,6 @@ export function QuestionForm({
     question?.type || defaultType || 'behavioral'
   );
   const [company, setCompany] = useState(question?.company || '');
-  const [newCompany, setNewCompany] = useState('');
   const [questionText, setQuestionText] = useState(question?.question || '');
   const [answers, setAnswers] = useState<AnswerVariation[]>(
     question?.answerVariations?.length
@@ -50,9 +50,13 @@ export function QuestionForm({
   const [codeLanguage, setCodeLanguage] = useState(question?.codeSnippet?.language || '');
   const [codeContent, setCodeContent] = useState(question?.codeSnippet?.code || '');
 
+  const allCompanies = Array.from(
+    new Set([...DEFAULT_COMPANIES, ...companies])
+  ).sort();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const selectedCompany = (newCompany || company).trim();
+    const selectedCompany = company.trim();
 
     // Filter answers: for STAR mode, check if any STAR field is filled; for free-form check content
     const filteredAnswers = answers.filter((a) => {
@@ -177,30 +181,19 @@ export function QuestionForm({
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Company <span className="text-gray-400 font-normal">(optional)</span></label>
-              <select
+              <input
+                type="text"
+                list="company-suggestions-question"
                 value={company}
-                onChange={(e) => {
-                  setCompany(e.target.value);
-                  setNewCompany('');
-                }}
+                onChange={(e) => setCompany(e.target.value)}
                 className="input-field"
-              >
-                <option value="">None (general question)</option>
-                {companies.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
+                placeholder="Type or select a company"
+              />
+              <datalist id="company-suggestions-question">
+                {allCompanies.map((c) => (
+                  <option key={c} value={c} />
                 ))}
-              </select>
-              {company === '' && (
-                <input
-                  type="text"
-                  placeholder="Or type new company name"
-                  value={newCompany}
-                  onChange={(e) => setNewCompany(e.target.value)}
-                  className="input-field mt-2"
-                />
-              )}
+              </datalist>
             </div>
           </div>
 

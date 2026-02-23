@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QuestionForm } from './QuestionForm';
 import { makeQuestion } from '../test/factories';
+import { DEFAULT_COMPANIES } from '../db/indexeddb';
 
 const defaultProps = {
   companies: ['Google', 'Meta', 'Amazon'],
@@ -30,11 +31,28 @@ describe('QuestionForm', () => {
     expect(typeSelect).toBeInTheDocument();
   });
 
-  it('should show company dropdown with existing companies', () => {
-    render(<QuestionForm {...defaultProps} />);
-    expect(screen.getByText('Google')).toBeInTheDocument();
-    expect(screen.getByText('Meta')).toBeInTheDocument();
-    expect(screen.getByText('Amazon')).toBeInTheDocument();
+  it('should show company input with datalist suggestions including user companies', () => {
+    const { container } = render(<QuestionForm {...defaultProps} />);
+    const input = screen.getByPlaceholderText('Type or select a company');
+    expect(input).toBeInTheDocument();
+    const datalist = container.querySelector('#company-suggestions-question');
+    const values = Array.from(datalist?.querySelectorAll('option') ?? []).map(
+      (o) => o.getAttribute('value')
+    );
+    expect(values).toContain('Google');
+    expect(values).toContain('Meta');
+    expect(values).toContain('Amazon');
+  });
+
+  it('should include default companies in datalist', () => {
+    const { container } = render(<QuestionForm {...defaultProps} />);
+    const datalist = container.querySelector('#company-suggestions-question');
+    const values = Array.from(datalist?.querySelectorAll('option') ?? []).map(
+      (o) => o.getAttribute('value')
+    );
+    for (const c of DEFAULT_COMPANIES) {
+      expect(values).toContain(c);
+    }
   });
 
   it('should mark company as optional', () => {
@@ -42,14 +60,17 @@ describe('QuestionForm', () => {
     expect(screen.getByText('(optional)')).toBeInTheDocument();
   });
 
-  it('should show "None (general question)" as default company option', () => {
-    render(<QuestionForm {...defaultProps} />);
-    expect(screen.getByText('None (general question)')).toBeInTheDocument();
-  });
-
-  it('should show new company input when no company selected', () => {
-    render(<QuestionForm {...defaultProps} />);
-    expect(screen.getByPlaceholderText('Or type new company name')).toBeInTheDocument();
+  it('should allow typing a free-text company name', async () => {
+    const onSubmit = vi.fn();
+    render(<QuestionForm {...defaultProps} onSubmit={onSubmit} />);
+    const companyInput = screen.getByPlaceholderText('Type or select a company');
+    await userEvent.type(companyInput, 'My Startup');
+    await userEvent.type(
+      screen.getByPlaceholderText('Enter the interview question...'),
+      'Q'
+    );
+    await userEvent.click(screen.getByText('Add Question'));
+    expect(onSubmit.mock.calls[0][0].company).toBe('My Startup');
   });
 
   // ─── Default type ───────────────────────────────────────────
@@ -203,8 +224,8 @@ describe('QuestionForm', () => {
     render(<QuestionForm {...defaultProps} question={q} />);
 
     expect(screen.getByDisplayValue('Existing question text')).toBeInTheDocument();
-    // Company should be selected
-    const companySelect = screen.getByDisplayValue('Google') as HTMLSelectElement;
-    expect(companySelect.value).toBe('Google');
+    // Company should be prefilled in the text input
+    const companyInput = screen.getByPlaceholderText('Type or select a company') as HTMLInputElement;
+    expect(companyInput.value).toBe('Google');
   });
 });
