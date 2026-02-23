@@ -8,6 +8,7 @@ import type {
   InterviewStatus,
   Question,
 } from '../db/indexeddb';
+import { DEFAULT_COMPANIES } from '../db/indexeddb';
 
 interface InterviewFormProps {
   interview?: Interview;
@@ -37,7 +38,6 @@ export function InterviewForm({
   onCancel,
 }: InterviewFormProps) {
   const [company, setCompany] = useState(interview?.company || defaultCompany || '');
-  const [newCompany, setNewCompany] = useState('');
   const [dateTime, setDateTime] = useState(
     interview ? toLocalDateTimeString(interview.dateTime) : ''
   );
@@ -46,7 +46,9 @@ export function InterviewForm({
   );
   const [duration, setDuration] = useState(interview?.duration || 60);
   const [status, setStatus] = useState<InterviewStatus>(interview?.status || 'scheduled');
-  const [showMore, setShowMore] = useState(false);
+  const hasOptionalData = !!(interview?.role || interview?.round || interview?.location ||
+    interview?.contactName || interview?.contactEmail || interview?.notes);
+  const [showMore, setShowMore] = useState(hasOptionalData);
   const [role, setRole] = useState(interview?.role || '');
   const [round, setRound] = useState<InterviewRound | ''>(interview?.round || '');
   const [location, setLocation] = useState(interview?.location || '');
@@ -58,10 +60,12 @@ export function InterviewForm({
   );
   const [questionSearch, setQuestionSearch] = useState('');
 
-  const resolvedCompany = newCompany || company;
+  const allCompanies = Array.from(
+    new Set([...DEFAULT_COMPANIES, ...companies])
+  ).sort();
 
   const companyQuestions = questions.filter(
-    (q) => q.company?.toLowerCase() === resolvedCompany.toLowerCase()
+    (q) => q.company?.toLowerCase() === company.toLowerCase()
   );
   const filteredQuestions = questionSearch
     ? companyQuestions.filter((q) =>
@@ -72,14 +76,14 @@ export function InterviewForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!resolvedCompany.trim() || !dateTime) {
+    if (!company.trim() || !dateTime) {
       alert('Please fill in company and date/time');
       return;
     }
 
     const now = Date.now();
     onSubmit({
-      company: resolvedCompany.trim(),
+      company: company.trim(),
       dateTime: new Date(dateTime).getTime(),
       duration,
       interviewType,
@@ -121,31 +125,20 @@ export function InterviewForm({
           {/* Company */}
           <div>
             <label className="block text-sm font-medium mb-1">Company *</label>
-            <select
+            <input
+              type="text"
+              list="company-suggestions-interview"
               value={company}
-              onChange={(e) => {
-                setCompany(e.target.value);
-                setNewCompany('');
-              }}
+              onChange={(e) => setCompany(e.target.value)}
               className="input-field"
-            >
-              <option value="">Select or type new...</option>
-              {companies.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
+              placeholder="Type or select a company"
+            />
+            <datalist id="company-suggestions-interview">
+              {allCompanies.map((c) => (
+                <option key={c} value={c} />
               ))}
-            </select>
-            {company === '' && (
-              <input
-                type="text"
-                placeholder="Or type company name"
-                value={newCompany}
-                onChange={(e) => setNewCompany(e.target.value)}
-                className="input-field mt-2"
-              />
-            )}
-            {resolvedCompany && companyQuestions.length > 0 && (
+            </datalist>
+            {company && companyQuestions.length > 0 && (
               <p className="text-xs text-interviews-600 dark:text-interviews-400 mt-1">
                 {companyQuestions.length} question{companyQuestions.length !== 1 ? 's' : ''} prepared
               </p>
@@ -297,7 +290,7 @@ export function InterviewForm({
               </div>
 
               {/* Link Questions */}
-              {resolvedCompany && companyQuestions.length > 0 && (
+              {company && companyQuestions.length > 0 && (
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     Link Questions ({linkedQuestionIds.length} selected)

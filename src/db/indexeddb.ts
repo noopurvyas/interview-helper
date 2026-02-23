@@ -66,6 +66,14 @@ export const BEHAVIORAL_TEMPLATES: { category: string; questions: string[] }[] =
   },
 ];
 
+export const DEFAULT_COMPANIES: string[] = [
+  'Amazon', 'Apple', 'Coinbase', 'Databricks', 'Google',
+  'IBM', 'Intel', 'Lyft', 'Meta', 'Microsoft',
+  'Netflix', 'Nvidia', 'Oracle', 'Palantir', 'PayPal',
+  'Salesforce', 'Snap', 'Spotify', 'Stripe', 'Tesla',
+  'Uber', 'VMware', 'Walmart', 'X', 'Yahoo',
+];
+
 export type TechnicalSubtype = 'coding' | 'system-design' | 'knowledge' | 'take-home';
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -177,7 +185,20 @@ export function setMutationCallback(cb: MutationCallback) { mutationCb = cb; }
 async function initDB(): Promise<IDBPDatabase> {
   if (db) return db;
 
-  db = await openDB(DB_NAME, DB_VERSION, {
+  const openPromise = openDB(DB_NAME, DB_VERSION, {
+    blocked(currentVersion, blockedVersion) {
+      console.warn(`IndexedDB upgrade blocked (v${currentVersion} → v${blockedVersion}). Close other tabs to proceed.`);
+    },
+    blocking(currentVersion, blockedVersion) {
+      // Our connection is blocking another tab's upgrade — close to unblock
+      console.warn(`IndexedDB blocking upgrade (v${currentVersion} → v${blockedVersion}). Closing connection.`);
+      db?.close();
+      db = null;
+    },
+    terminated() {
+      console.warn('IndexedDB connection terminated unexpectedly.');
+      db = null;
+    },
     upgrade(db, oldVersion) {
       // v1: questions + bookmarks stores
       if (oldVersion < 1) {
@@ -225,6 +246,12 @@ async function initDB(): Promise<IDBPDatabase> {
     },
   });
 
+  // Timeout to prevent hanging if upgrade is blocked by another connection
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('IndexedDB open timed out — close other tabs and refresh')), 5000)
+  );
+
+  db = await Promise.race([openPromise, timeout]);
   return db;
 }
 
